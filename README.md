@@ -1,4 +1,4 @@
-# Relink Save Workshop: Overmastery
+# Relink Save Workshop
 
 A browser-based, save-file-only editor for Granblue Fantasy: Relink overmasteries. It does not connect to the game or modify game memory. The app reads and edits the selected save locally, then downloads an edited copy.
 
@@ -12,7 +12,7 @@ npm run dev
 
 Open [http://127.0.0.1:8000](http://127.0.0.1:8000). To stop the local server, press `Ctrl+C` in the terminal.
 
-The app is deployed to [GitHub Pages](https://maristie.github.io/gbfr-overmastery-web/). The site makes no save-file upload requests.
+The app is deployed to [GitHub Pages](https://maristie.com/gbfr-save-workshop/). The site makes no save-file upload requests.
 
 ## Use
 
@@ -46,6 +46,21 @@ Relevant upstream files: [`internal/backend/loadout_stats.go`](https://github.co
 
 The app checks for the expected FlatBuffers save structure and fails closed when required character, overmastery, or checksum data cannot be identified. It is not a universal save converter; saves with a different or encrypted layout are not supported.
 
+## Credits and licensing
+
+We use OpenAI Codex for development support.
+
+This editor's browser interface, FlatBuffers parser and writer, and checksum implementation were written for this project. Its save-format analysis and some character/stat hash and value mappings were informed by these references:
+
+- [BitterG/GBFR-PE-Patch-Tool](https://github.com/BitterG/GBFR-PE-Patch-Tool/tree/b67bce7704719e331359c1a3393ec8f090bcc192), especially its [Overmastery save reader](https://github.com/BitterG/GBFR-PE-Patch-Tool/blob/b67bce7704719e331359c1a3393ec8f090bcc192/internal/backend/loadout_stats.go), [offline save writer](https://github.com/BitterG/GBFR-PE-Patch-Tool/blob/b67bce7704719e331359c1a3393ec8f090bcc192/internal/backend/loadout_import_apply.go), [checksum implementation](https://github.com/BitterG/GBFR-PE-Patch-Tool/blob/b67bce7704719e331359c1a3393ec8f090bcc192/internal/backend/sigil_store.go), and [Overmastery catalog](https://github.com/BitterG/GBFR-PE-Patch-Tool/blob/b67bce7704719e331359c1a3393ec8f090bcc192/internal/backend/overlimit.go).
+- [xcier/GBFR-Save-Editor](https://github.com/xcier/GBFR-Save-Editor/tree/8fdb4497fcf0cf67a4b122062a00f8ff07cc3942), especially its [save parser/checksum](https://github.com/xcier/GBFR-Save-Editor/blob/8fdb4497fcf0cf67a4b122062a00f8ff07cc3942/gbfr_editor/core/gbfr_save.py), [field 1404 editor](https://github.com/xcier/GBFR-Save-Editor/blob/8fdb4497fcf0cf67a4b122062a00f8ff07cc3942/gbfr_editor/core/cheat_actions.py), and [Overmastery mapping audit](https://github.com/xcier/GBFR-Save-Editor/blob/8fdb4497fcf0cf67a4b122062a00f8ff07cc3942/gbfr_editor/resources/overmastery_mapping_audit.csv).
+
+As of September 30, 2026, GitHub reports no license for either reference repository, and neither repository contains a `LICENSE` file at the inspected revision. This project also currently has no `LICENSE` file. A public repository and attribution do not by themselves grant general rights to reuse source code; see [GitHub's licensing guidance](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository). This project does not bundle source files from either reference repository.
+
 ## Privacy
 
 The browser reads the selected file into local memory. The code has no analytics, external font loading, or upload endpoint. When hosted remotely, the host serves the static app files, but save contents remain in the browser.
+
+## Feedback
+
+Report app problems in [GitHub Issues](https://github.com/maristie/gbfr-save-workshop/issues). Issues are public, so do not attach save files or include private save data.
