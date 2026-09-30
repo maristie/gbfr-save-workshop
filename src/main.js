@@ -10,7 +10,9 @@ import {
   isEmptySlot,
   levelFromBit,
   parseSave,
+  validateCustomInventoryAddition,
 } from './save-format.js'
+import { INVENTORY_CATALOG } from './inventory-catalog.js'
 
 const app = document.querySelector('#app')
 const state = {
@@ -21,11 +23,66 @@ const state = {
   error: '',
   notice: '',
   filter: '',
+  activeTab: 'overmastery',
+  inventoryAdds: [],
+  inventoryFilter: { sigil: '', wrightstone: '' },
+  nextDraftId: 1,
+  openRawKind: '',
 }
 
 const escapeHTML = (value) => String(value).replace(/[&<>"']/g, (character) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 }[character]))
+
+const sigilsById = new Map(INVENTORY_CATALOG.sigils.map((item) => [item.id, item]))
+const wrightstonesById = new Map(INVENTORY_CATALOG.wrightstones.map((item) => [item.id, item]))
+const traitsByHash = new Map(INVENTORY_CATALOG.traits.map((trait) => [Number(trait.hash) >>> 0, trait]))
+const sigilsByHash = new Map(INVENTORY_CATALOG.sigils.map((item) => [Number(item.hash) >>> 0, item]))
+const wrightstonesByHash = new Map(INVENTORY_CATALOG.wrightstones.map((item) => [Number(item.hash) >>> 0, item]))
+const duplicateSigilNames = new Set(INVENTORY_CATALOG.sigils
+  .filter((item, index, items) => items.some((other, otherIndex) => otherIndex !== index && other.name === item.name))
+  .map((item) => item.name))
+
+function inventoryCatalog(kind) {
+  return kind === 'sigil' ? INVENTORY_CATALOG.sigils : INVENTORY_CATALOG.wrightstones
+}
+
+function itemForHash(kind, hash) {
+  return (kind === 'sigil' ? sigilsByHash : wrightstonesByHash).get(hash >>> 0) ?? null
+}
+
+function traitForHash(hash) {
+  return traitsByHash.get(hash >>> 0) ?? null
+}
+
+function traitLabel(hash) {
+  return traitForHash(hash)?.name ?? 'Uncatalogued trait'
+}
+
+function itemLabel(kind, hash) {
+  const item = itemForHash(kind, hash)
+  if (!item) return `Uncatalogued ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'}`
+  if (kind === 'sigil' && duplicateSigilNames.has(item.name)) {
+    return `${item.name} · ${item.fixedSecondary ? 'fixed secondary' : 'selectable secondary'}`
+  }
+  return item.name
+}
+
+function traitOptions(traits, includeEmpty = false, selectedHash = '') {
+  const empty = includeEmpty ? '<option value="">No additional trait</option>' : ''
+  return `${empty}${traits.map((trait) => `<option value="${trait.hash}" data-max-level="${trait.maxLevel}"${trait.hash === selectedHash ? ' selected' : ''}>${escapeHTML(trait.name)}</option>`).join('')}`
+}
+
+function optionsForSigil(item) {
+  const allowed = item.secondaryTraitHashes
+    .map((hash) => traitForHash(Number(hash)))
+    .filter(Boolean)
+  return allowed
+}
+
+function primaryTraitFor(item) {
+  return traitForHash(Number(item.primaryTraitHash))
+}
 
 function selectedCharacter() {
   return state.parsed?.characters.find((character) => character.unitId === state.selectedUnitId) ?? null
@@ -112,13 +169,13 @@ function characterList() {
 function renderUpload() {
   return `<section class="welcome-grid">
     <div class="welcome-copy">
-      <p class="eyebrow"><span class="pulse-dot"></span> SAVE FILE EDITOR <span class="eyebrow-divider">/</span> OVERMASTERY</p>
-      <h1>Shape your four overmastery slots.</h1>
-      <p class="welcome-text">Read a Relink save, adjust any character’s overmastery stats, then download a verified copy. No game connection or desktop install needed.</p>
+      <p class="eyebrow"><span class="pulse-dot"></span> SAVE FILE EDITOR <span class="eyebrow-divider">/</span> SAVE WORKSHOP</p>
+      <h1>Edit overmasteries. Add to your bag.</h1>
+      <p class="welcome-text">Read a Relink save, adjust overmastery stats, duplicate Sigils or Wrightstones into your bag, or choose them by name from the item catalog. Then download a verified copy.</p>
       <div class="trust-points">
         <span><i>01</i> Files stay on this device</span>
         <span><i>02</i> Original save stays untouched</span>
-        <span><i>03</i> Browser-based on desktop or mobile</span>
+        <span><i>03</i> Sigils and Wrightstones</span>
       </div>
       <button class="primary-button welcome-button" data-action="open-file" type="button"><span class="button-icon">↑</span> Choose save file</button>
     </div>
@@ -133,12 +190,163 @@ function renderUpload() {
   </section>`
 }
 
+function queuedFor(kind) {
+  return state.inventoryAdds.filter((addition) => addition.kind === kind).length
+}
+
+function inventoryBucket(kind) {
+  return state.parsed.inventory[kind === 'sigil' ? 'sigils' : 'wrightstones']
+}
+
+function inventoryRowSearchText(kind, row) {
+  return [itemLabel(kind, row.hash), row.unitId, row.level, ...row.lanes.map((lane) => `${traitLabel(lane.hash)} ${lane.level ?? ''}`)]
+    .join(' ').toLowerCase()
+}
+
+function renderInventoryCategory(kind) {
+  const bucket = inventoryBucket(kind)
+  const label = kind === 'sigil' ? 'Sigils' : 'Wrightstones'
+  const title = kind === 'sigil' ? 'Sigils' : 'Wrightstones'
+  const search = state.inventoryFilter[kind].trim().toLowerCase()
+  const active = bucket.rows.filter((row) => !row.empty)
+  const matched = search ? active.filter((row) => inventoryRowSearchText(kind, row).includes(search)) : active
+  const shown = matched.slice(0, 100)
+  const freeAfterQueue = bucket.available - queuedFor(kind)
+  const rows = shown.map((row) => {
+    const traitSummary = row.lanes.map((lane, index) => {
+      const empty = lane.hash === 0 || lane.hash === 0x887ae0b0
+      return empty ? '' : `T${index + 1} ${traitLabel(lane.hash)} · Lv ${lane.level}`
+    }).filter(Boolean).join('  /  ')
+    const subtitle = kind === 'sigil' ? `Sigil Lv ${row.level}` : `Serial ${row.serial}`
+    const queueAllowed = state.parsed.checksumValid && row.cloneable && freeAfterQueue > 0 && !bucket.maxCount.ambiguous && !bucket.serialAmbiguous
+    const searchText = escapeHTML(inventoryRowSearchText(kind, row))
+    return `<article class="inventory-row" data-inventory-row data-search="${searchText}">
+      <div class="inventory-item-copy"><strong>${escapeHTML(itemLabel(kind, row.hash))}</strong><small>${subtitle} · Unit ${row.unitId} · ${row.ownerHash && row.ownerHash !== 0x887ae0b0 ? 'assigned in source' : 'bag item'}</small><span>${escapeHTML(traitSummary || 'No trait values recognized')}</span></div>
+      <button class="subtle-button inventory-add-button" data-action="queue-copy" data-kind="${kind}" data-unit-id="${row.unitId}" type="button" ${queueAllowed ? '' : 'disabled'}>Add copy</button>
+    </article>`
+  }).join('')
+  const capText = `${bucket.occupied.toLocaleString()} in bag · ${Math.max(0, freeAfterQueue).toLocaleString()} empty slots`
+  const counterWarning = bucket.maxCount.ambiguous || bucket.serialAmbiguous
+    ? `<div class="alert alert-warning"><strong>Slot counter or serial records are ambiguous.</strong> This item type is read-only for this save.</div>`
+    : ''
+  const emptyMarkup = matched.length === 0 ? '<p class="inventory-empty">No matching bag entries.</p>' : ''
+  const moreMarkup = matched.length > shown.length
+    ? `<p class="inventory-limit">Showing 100 of ${matched.length.toLocaleString()} matches. Refine the item name or trait search to narrow the list.</p>`
+    : ''
+  return `<section class="inventory-card">
+    <div class="inventory-card-heading"><div><p class="eyebrow">${label.toUpperCase()}</p><h3>${title}</h3></div><span class="inventory-capacity">${capText}</span></div>
+    <p class="inventory-help">Choose an owned entry to add a matching copy. New copies go into an existing empty slot and are left unassigned.</p>
+    ${counterWarning}
+    <label class="search-box inventory-search"><span>⌕</span><input data-role="inventory-search" data-kind="${kind}" type="search" placeholder="Search item names, traits, or slot ID" value="${escapeHTML(state.inventoryFilter[kind])}" autocomplete="off" /></label>
+    <div class="inventory-list">${rows || emptyMarkup}${moreMarkup}</div>
+    <details class="raw-add-details" ${state.openRawKind === kind ? 'open' : ''}>
+      <summary>Create from item catalog</summary>
+      <p>Select named items and traits. Their save hashes are filled in automatically. Trait combinations are not checked for in-game legality.</p>
+      ${renderCatalogForm(kind)}
+    </details>
+  </section>`
+}
+
+function renderCatalogForm(kind) {
+  const items = inventoryCatalog(kind)
+  if (!items.length) return '<p class="inventory-empty">The item catalog is unavailable.</p>'
+  const item = items[0]
+  const primaryTrait = primaryTraitFor(item)
+  if (!primaryTrait) return '<p class="inventory-empty">The item catalog is unavailable.</p>'
+  const disabled = !state.parsed.checksumValid || inventoryBucket(kind).available - queuedFor(kind) <= 0 || inventoryBucket(kind).maxCount.ambiguous || inventoryBucket(kind).serialAmbiguous
+  const itemOptions = `<option value="" disabled selected>Choose a ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'}</option>${items.map((entry) => `<option value="${escapeHTML(entry.id)}">${escapeHTML(itemLabel(kind, entry.hash))}</option>`).join('')}`
+  const allTraits = INVENTORY_CATALOG.traits
+  const secondaryTraits = kind === 'sigil' ? optionsForSigil(item) : allTraits
+  const secondaryDisabled = kind === 'sigil'
+  const secondTraitLabel = kind === 'sigil' ? 'SECONDARY TRAIT' : 'ADDITIONAL TRAIT 1'
+  const thirdTrait = kind === 'wrightstone' ? `<div class="raw-lane">
+    <label class="raw-field"><span>ADDITIONAL TRAIT 2</span><select data-role="trait-select" name="trait2Hash">${traitOptions(allTraits, true)}</select></label>
+    <label class="raw-field"><span>LEVEL 3</span><input name="trait2Level" type="number" min="1" max="50" placeholder="Optional" /></label>
+  </div>` : ''
+  const initialSecondaryHash = kind === 'sigil' && item.fixedSecondary ? item.secondaryTraitHashes[0] : ''
+  const extraTrait = kind === 'sigil'
+    ? `<select data-role="sigil-secondary" name="trait1Hash" ${secondaryDisabled ? 'disabled' : ''}>${traitOptions(secondaryTraits, !item.fixedSecondary, initialSecondaryHash)}</select>`
+    : `<select data-role="trait-select" name="trait1Hash">${traitOptions(allTraits, true)}</select>`
+  const additionalLane = `<div class="raw-lane">
+    <label class="raw-field"><span>${secondTraitLabel}</span>${extraTrait}</label>
+    <label class="raw-field"><span>LEVEL 2</span><input name="trait1Level" type="number" min="1" max="50" placeholder="Optional" ${secondaryDisabled ? 'disabled' : ''}${item.fixedSecondary ? ' required' : ''} /></label>
+  </div>`
+  return `<form class="raw-add-form" data-kind="${kind}">
+    <label class="raw-field"><span>${kind === 'sigil' ? 'SIGIL TYPE' : 'WRIGHTSTONE TYPE'} *</span><select data-role="catalog-item" name="catalogItemId" required>${itemOptions}</select></label>
+    ${kind === 'sigil' ? '<label class="raw-field"><span>SIGIL LEVEL *</span><input name="level" type="number" min="1" max="15" value="15" required /></label>' : ''}
+    <div class="raw-lane">
+      <label class="raw-field"><span>PRIMARY TRAIT · <span data-role="primary-trait-name">Choose an item to see its primary trait</span></span><input name="trait0Hash" type="hidden" value="" /></label>
+      <label class="raw-field"><span>LEVEL 1 *</span><input data-role="primary-level" name="trait0Level" type="number" min="1" max="50" value="1" required /></label>
+    </div>
+    <div class="raw-lanes">${additionalLane}${thirdTrait}</div>
+    <button class="primary-button raw-submit" type="submit" ${disabled ? 'disabled' : ''}>Add ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'}</button>
+  </form>`
+}
+
+function refreshCatalogForm(form) {
+  const kind = form.dataset.kind
+  const itemId = form.querySelector('[name="catalogItemId"]')?.value
+  const item = (kind === 'sigil' ? sigilsById : wrightstonesById).get(itemId)
+  if (!item) return
+  const primary = primaryTraitFor(item)
+  if (!primary) return
+  form.querySelector('[name="trait0Hash"]').value = primary.hash
+  form.querySelector('[data-role="primary-trait-name"]').textContent = primary.name
+  const primaryLevel = form.querySelector('[data-role="primary-level"]')
+  primaryLevel.max = primary.maxLevel
+  if (Number(primaryLevel.value) > primary.maxLevel) primaryLevel.value = primary.maxLevel
+  if (kind !== 'sigil') return
+
+  const secondarySelect = form.querySelector('[data-role="sigil-secondary"]')
+  const secondaryLevel = form.querySelector('[name="trait1Level"]')
+  const selectedHash = secondarySelect.value
+  const allowedTraits = optionsForSigil(item)
+  secondarySelect.innerHTML = traitOptions(allowedTraits, !item.fixedSecondary, item.fixedSecondary ? item.secondaryTraitHashes[0] : '')
+  secondarySelect.disabled = allowedTraits.length === 0
+  if (item.fixedSecondary && allowedTraits.length) secondarySelect.value = item.secondaryTraitHashes[0]
+  else if (allowedTraits.some((trait) => trait.hash === selectedHash)) secondarySelect.value = selectedHash
+  else secondarySelect.value = ''
+  secondaryLevel.disabled = allowedTraits.length === 0
+  secondaryLevel.required = Boolean(item.fixedSecondary && allowedTraits.length)
+  if (allowedTraits.length === 0) secondaryLevel.value = ''
+  const secondaryTrait = traitForHash(Number(secondarySelect.value))
+  if (secondaryTrait) {
+    secondaryLevel.max = secondaryTrait.maxLevel
+    if (Number(secondaryLevel.value) > secondaryTrait.maxLevel) secondaryLevel.value = secondaryTrait.maxLevel
+  } else secondaryLevel.max = 50
+}
+
+function updateTraitLevelLimit(select) {
+  const selected = select.selectedOptions[0]
+  const maxLevel = Number(selected?.dataset.maxLevel) || 50
+  const levelInput = select.closest('.raw-lane')?.querySelector('input[type="number"]')
+  if (!levelInput) return
+  levelInput.max = maxLevel
+  if (Number(levelInput.value) > maxLevel) levelInput.value = maxLevel
+}
+
+function renderInventoryPanel() {
+  const queued = state.inventoryAdds
+  const queuedMarkup = queued.length ? queued.map((addition) => `<div class="queue-item">
+    <span><strong>${escapeHTML(addition.itemName ?? itemLabel(addition.kind, addition.hash))}</strong></span>
+    <small>${addition.kind === 'sigil' ? `Lv ${addition.level}` : `${addition.lanes.filter((lane) => lane.hash !== 0x887ae0b0 && lane.hash !== 0).length} traits`}${addition.sourceUnitId ? ` · copied from ${addition.sourceUnitId}` : ' · catalog selection'}</small>
+    <button class="queue-remove" data-action="remove-queued" data-draft-id="${addition.draftId}" type="button" aria-label="Remove queued item">×</button>
+  </div>`).join('') : '<p class="queue-empty">No bag additions queued.</p>'
+  return `<section class="inventory-workspace">
+    <div class="inventory-intro"><div><p class="eyebrow">BAG INVENTORY</p><h2>Add Sigils and Wrightstones.</h2></div><p>Copy an owned item or choose one by name from the catalog. Hashes are filled in for you. Export verifies the new records and checksum before download.</p></div>
+    <div class="inventory-grid">${renderInventoryCategory('sigil')}${renderInventoryCategory('wrightstone')}</div>
+    <section class="queue-panel"><div><p class="eyebrow">PENDING CHANGES</p><h3>${queued.length} item${queued.length === 1 ? '' : 's'} queued</h3></div><div class="queue-list">${queuedMarkup}</div></section>
+  </section>`
+}
+
 function renderLoaded() {
   const { rows, count } = characterList()
   const changes = (() => { try { return currentChanges() } catch { return [] } })()
   const character = selectedCharacter()
   const checksumValid = state.parsed.checksumValid
-  const canDownload = changes.length > 0 && checksumValid
+  const queued = state.inventoryAdds.length
+  const hasPending = changes.length > 0 || queued > 0
+  const canDownload = hasPending && checksumValid
   const slotsMarkup = character ? character.slots.map((slot) => {
     const value = slotValue(slot)
     const stat = getStat(slot.draftHash)
@@ -180,7 +388,11 @@ function renderLoaded() {
       <button class="subtle-button" data-action="open-file" type="button">Open another</button>
     </div>
     ${!checksumValid ? '<div class="alert alert-danger"><strong>This save’s checksum does not match.</strong> Editing is disabled so the browser will not make a damaged file worse. Re-export a clean save and try again.</div>' : ''}
-    <div class="editor-layout">
+    <div class="tool-tabs" role="tablist" aria-label="Save editor tools">
+      <button class="tool-tab${state.activeTab === 'overmastery' ? ' is-active' : ''}" role="tab" aria-selected="${state.activeTab === 'overmastery'}" data-action="switch-tab" data-tab="overmastery" type="button">Overmastery</button>
+      <button class="tool-tab${state.activeTab === 'inventory' ? ' is-active' : ''}" role="tab" aria-selected="${state.activeTab === 'inventory'}" data-action="switch-tab" data-tab="inventory" type="button">Bag items <span>${queued}</span></button>
+    </div>
+    ${state.activeTab === 'inventory' ? renderInventoryPanel() : `<div class="editor-layout">
       <aside class="character-panel">
         <div class="panel-heading"><div><p class="eyebrow">CHARACTER ROSTER</p><h2>Characters</h2></div><span class="count-badge">${count}</span></div>
         <label class="search-box"><span>⌕</span><input id="character-search" type="search" placeholder="Find a character" value="${escapeHTML(state.filter)}" autocomplete="off" /></label>
@@ -193,13 +405,13 @@ function renderLoaded() {
           <div class="character-seal">${escapeHTML(character.name.slice(0, 1).toUpperCase())}<span>GBFR</span></div>
         </div>
         <div class="slots-grid">${slotsMarkup}</div>
-        <div class="edit-footer">
-          <div class="edit-feedback" aria-live="polite">${state.notice ? `<span class="feedback-check">✓</span>${escapeHTML(state.notice)}` : `<span class="feedback-dot"></span>${changes.length ? `${changes.length} slot${changes.length === 1 ? '' : 's'} changed` : 'No unsaved changes'}`}</div>
-          <div class="edit-actions"><button class="subtle-button" data-action="reset" type="button" ${changes.length ? '' : 'disabled'}>Reset edits</button><button class="primary-button download-button" data-action="download" type="button" ${canDownload ? '' : 'disabled'}>${downloadLabel}</button></div>
-        </div>
         ${!character.supported ? '<div class="alert alert-warning"><strong>This unit is not mapped as a playable character.</strong> Its saved overmastery slots are read-only.</div>' : character.slots.some((slot) => !slot.editable) ? '<div class="alert alert-warning"><strong>Some slots are read-only.</strong> One or more attribute/level pairs are missing or ambiguous in this save.</div>' : ''}
         ` : '<div class="no-character"><span class="no-character-icon">◈</span><h2>Select a character</h2><p>Choose a row from the roster to inspect its overmastery slots.</p></div>'}
       </section>
+    </div>`}
+    <div class="edit-footer workspace-footer">
+      <div class="edit-feedback" aria-live="polite">${state.notice ? `<span class="feedback-check">✓</span>${escapeHTML(state.notice)}` : `<span class="feedback-dot"></span>${changes.length ? `${changes.length} overmastery slot${changes.length === 1 ? '' : 's'}` : 'No overmastery edits'}${queued ? ` · ${queued} bag addition${queued === 1 ? '' : 's'}` : ''}`}</div>
+      <div class="edit-actions"><button class="subtle-button" data-action="reset" type="button" ${hasPending ? '' : 'disabled'}>Reset edits</button><button class="primary-button download-button" data-action="download" type="button" ${canDownload ? '' : 'disabled'}>${downloadLabel}</button></div>
     </div>
     <div class="workspace-note"><span>⟲</span> Export creates a new file. Keep your original save as a backup until the game loads the edited copy.</div>
   </section>`
@@ -219,7 +431,7 @@ function render() {
     </header>
     <main>
       <div class="page-ribbon"><span>FIELD KIT <b>01</b></span><span>GRANBLUE FANTASY: RELINK</span><span class="ribbon-version">WEB EDITION <i></i></span></div>
-      ${state.error ? `<div class="alert alert-danger load-error"><strong>Couldn’t open this save.</strong> ${escapeHTML(state.error)} <button data-action="dismiss-error" type="button" aria-label="Dismiss">×</button></div>` : ''}
+      ${state.error ? `<div class="alert alert-danger load-error"><strong>${state.parsed ? 'Couldn’t apply this change.' : 'Couldn’t open this save.'}</strong> ${escapeHTML(state.error)} <button data-action="dismiss-error" type="button" aria-label="Dismiss">×</button></div>` : ''}
       ${state.parsed ? renderLoaded() : renderUpload()}
       <footer class="page-footer"><span>INDEPENDENT COMMUNITY TOOL · SAVE FILES NEVER LEAVE YOUR BROWSER</span><span>DESIGNED FOR KEYBOARD, MOUSE & TOUCH</span></footer>
     </main>
@@ -271,12 +483,36 @@ function bindEvents() {
     applyFilter()
   })
 
+  app.querySelectorAll('[data-role="inventory-search"]').forEach((inputElement) => {
+    inputElement.addEventListener('input', (event) => {
+      const kind = event.currentTarget.dataset.kind
+      state.inventoryFilter[kind] = event.currentTarget.value
+      const caret = event.currentTarget.selectionStart
+      render()
+      const replacement = app.querySelector(`[data-role="inventory-search"][data-kind="${kind}"]`)
+      replacement?.focus({ preventScroll: true })
+      replacement?.setSelectionRange(caret, caret)
+    })
+  })
+
+  app.querySelectorAll('.raw-add-form').forEach((form) => {
+    form.addEventListener('submit', (event) => queueCatalogInventoryItem(event, form))
+    form.querySelector('[data-role="catalog-item"]')?.addEventListener('change', () => refreshCatalogForm(form))
+    form.querySelectorAll('[data-role="trait-select"]').forEach((select) => {
+      select.addEventListener('change', () => updateTraitLevelLimit(select))
+    })
+    form.querySelector('[data-role="sigil-secondary"]')?.addEventListener('change', (event) => updateTraitLevelLimit(event.currentTarget))
+  })
+
   app.querySelectorAll('[data-action]').forEach((element) => {
     element.addEventListener('click', async (event) => {
       const action = event.currentTarget.dataset.action
       if (action === 'open-file') input?.click()
       if (action === 'dismiss-error') { state.error = ''; render() }
       if (action === 'select-character') { state.selectedUnitId = Number(event.currentTarget.dataset.unitId); state.notice = ''; render() }
+      if (action === 'switch-tab') { state.activeTab = event.currentTarget.dataset.tab; state.error = ''; render() }
+      if (action === 'queue-copy') queueInventoryCopy(event.currentTarget.dataset.kind, Number(event.currentTarget.dataset.unitId))
+      if (action === 'remove-queued') removeQueuedAddition(Number(event.currentTarget.dataset.draftId))
       if (action === 'reset') resetEdits()
       if (action === 'clear-slot') clearSlot(Number(event.currentTarget.dataset.unitId), Number(event.currentTarget.dataset.slotIndex))
       if (action === 'download') downloadEditedSave()
@@ -346,6 +582,81 @@ function clearSlot(unitId, slotIndex) {
   render()
 }
 
+function queueInventoryCopy(kind, unitId) {
+  const bucket = inventoryBucket(kind)
+  const row = bucket.rows.find((entry) => entry.unitId === unitId)
+  if (!row?.cloneable) return
+  if (!state.parsed.checksumValid) return
+  if (bucket.available - queuedFor(kind) <= 0) {
+    state.error = `There are no reusable empty ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'} slots left.`
+    render()
+    return
+  }
+  state.error = ''
+  state.notice = ''
+  state.inventoryAdds.push({
+    draftId: state.nextDraftId++,
+    kind,
+    hash: row.hash,
+    itemName: itemLabel(kind, row.hash),
+    level: row.level,
+    lanes: row.lanes.map(({ hash, level }) => ({ hash, level })),
+    sourceUnitId: unitId,
+  })
+  render()
+}
+
+function queueCatalogInventoryItem(event, form) {
+  event.preventDefault()
+  const kind = form.dataset.kind
+  const data = new FormData(form)
+  try {
+    const itemId = String(data.get('catalogItemId') ?? '')
+    const item = (kind === 'sigil' ? sigilsById : wrightstonesById).get(itemId)
+    if (!item) throw new Error('Choose an item from the catalog.')
+    const primaryTrait = primaryTraitFor(item)
+    if (!primaryTrait) throw new Error('The selected item has no recognized primary trait.')
+    const secondaryHash = data.get('trait1Hash')
+    if (kind === 'sigil' && secondaryHash && !item.secondaryTraitHashes.includes(secondaryHash)) {
+      throw new Error('Choose a secondary trait available for the selected Sigil.')
+    }
+    if (kind === 'sigil' && item.fixedSecondary && secondaryHash !== item.secondaryTraitHashes[0]) {
+      throw new Error('This Sigil requires its fixed secondary trait.')
+    }
+    const lanes = Array.from({ length: kind === 'sigil' ? 2 : 3 }, (_, index) => ({
+      hash: index === 0 ? primaryTrait.hash : data.get(`trait${index}Hash`),
+      level: data.get(`trait${index}Level`),
+    }))
+    const addition = validateCustomInventoryAddition(kind, {
+      hash: item.hash,
+      level: data.get('level'),
+      lanes,
+    })
+    if (inventoryBucket(kind).available - queuedFor(kind) <= 0) throw new Error(`There are no reusable empty ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'} slots left.`)
+    if (inventoryBucket(kind).maxCount.ambiguous || inventoryBucket(kind).serialAmbiguous) throw new Error(`The ${kind} slot counter or serial records are ambiguous, so this save cannot be edited safely.`)
+    addition.draftId = state.nextDraftId++
+    addition.catalogItemId = item.id
+    addition.itemName = itemLabel(kind, item.hash)
+    state.inventoryAdds.push(addition)
+    state.activeTab = 'inventory'
+    state.openRawKind = kind
+    state.error = ''
+    state.notice = ''
+  } catch (error) {
+    state.error = error instanceof Error ? error.message : String(error)
+    state.activeTab = 'inventory'
+    state.openRawKind = kind
+  }
+  render()
+}
+
+function removeQueuedAddition(draftId) {
+  state.inventoryAdds = state.inventoryAdds.filter((addition) => addition.draftId !== draftId)
+  state.error = ''
+  state.notice = ''
+  render()
+}
+
 function resetEdits() {
   for (const character of state.parsed.characters) {
     for (const slot of character.slots) {
@@ -353,6 +664,8 @@ function resetEdits() {
       slot.draftLevelBit = slot.originalLevelBit
     }
   }
+  state.inventoryAdds = []
+  state.error = ''
   state.notice = 'All edits reset.'
   render()
 }
@@ -368,6 +681,10 @@ async function loadFile(file) {
     state.parsed = parsed
     state.selectedUnitId = parsed.characters[0]?.unitId ?? null
     state.filter = ''
+    state.activeTab = 'overmastery'
+    state.inventoryAdds = []
+    state.inventoryFilter = { sigil: '', wrightstone: '' }
+    state.openRawKind = ''
     if (!parsed.checksumValid) state.notice = ''
   } catch (error) {
     state.error = error instanceof Error ? error.message : String(error)
@@ -375,6 +692,7 @@ async function loadFile(file) {
     state.bytes = null
     state.parsed = null
     state.selectedUnitId = null
+    state.inventoryAdds = []
   }
   render()
 }
@@ -382,7 +700,7 @@ async function loadFile(file) {
 function downloadEditedSave() {
   try {
     const changes = currentChanges()
-    const output = createEditedSave(state.bytes, state.parsed, changes)
+    const output = createEditedSave(state.bytes, state.parsed, changes, state.inventoryAdds)
     const blob = new Blob([output], { type: 'application/octet-stream' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -393,7 +711,9 @@ function downloadEditedSave() {
     link.click()
     link.remove()
     window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-    state.notice = `Downloaded ${link.download}; checksum and changed slots verified.`
+    const inventoryCount = state.inventoryAdds.length
+    const overmasteryCount = changes.length
+    state.notice = `Downloaded ${link.download}; checksum, ${overmasteryCount} overmastery edits, and ${inventoryCount} bag additions verified.`
   } catch (error) {
     state.error = error instanceof Error ? error.message : String(error)
     state.notice = ''

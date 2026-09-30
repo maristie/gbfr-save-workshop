@@ -9,6 +9,27 @@ const SLOT_BASE = 10000000
 const SLOT_STEP = 1000
 const SLOT_COUNT = 4
 const COMMUNITY_RAW_OVERRIDE = 0x03ff
+const SIGIL = {
+  baseUnitId: 30000,
+  maxCountIdType: 2701,
+  serialIdType: 2702,
+  hashIdType: 2703,
+  levelIdType: 2704,
+  ownerIdType: 2706,
+  flagsIdType: 2707,
+  traitBaseUnitId: 120000000,
+  traitLanes: 2,
+}
+const WRIGHTSTONE = {
+  baseUnitId: 50000,
+  maxCountIdType: 2101,
+  hashIdType: 2102,
+  serialIdType: 2103,
+  activeIdType: 2104,
+  flagsIdType: 2105,
+  traitBaseUnitId: 140000000,
+  traitLanes: 3,
+}
 const HASH_SEED = 0x2f1a43ebcdn
 const HASH_SECTIONS = [
   [0x58, 0x80], [0x30, 0xa0], [0x28, 0x30], [0x38, 0xc0], [0x40, 0xb0],
@@ -114,14 +135,16 @@ function rootTable(view, base, length, label) {
   return position
 }
 
-function parseUnitTable(view, base, length, rootPosition, rootFieldIndex, signed, label) {
+function parseUnitTable(view, base, length, rootPosition, rootFieldIndex, signed, label, valueSize = 4) {
   const tableVector = vectorAt(view, base, length, rootPosition, rootFieldIndex, 4, `${label} table`)
   if (!tableVector) return []
 
   const units = []
   const readValue = signed
     ? (offset) => view.getInt32(base + offset, true)
-    : (offset) => view.getUint32(base + offset, true)
+    : valueSize === 1
+      ? (offset) => view.getUint8(base + offset)
+      : (offset) => view.getUint32(base + offset, true)
 
   for (let index = 0; index < tableVector.count; index += 1) {
     const offsetPosition = tableVector.dataPosition + index * 4
@@ -129,7 +152,7 @@ function parseUnitTable(view, base, length, rootPosition, rootFieldIndex, signed
     checkSpan(recordPosition, 4, length, `${label} entry ${index + 1}`)
     const idPosition = tableField(view, base, length, recordPosition, 0, `${label} entry`)
     const unitPosition = tableField(view, base, length, recordPosition, 1, `${label} entry`)
-    const values = vectorAt(view, base, length, recordPosition, 2, 4, `${label} values`)
+    const values = vectorAt(view, base, length, recordPosition, 2, valueSize, `${label} values`)
     const valueDataPosition = values?.dataPosition ?? null
     const valueCount = values?.count ?? 0
     if (idPosition !== null) checkSpan(idPosition, 4, length, `${label} ID type`)
@@ -143,6 +166,137 @@ function parseUnitTable(view, base, length, rootPosition, rootFieldIndex, signed
     })
   }
   return units
+}
+
+function indexUnits(units, idType) {
+  const result = new Map()
+  for (const unit of units) {
+    if (unit.idType !== idType) continue
+    if (!result.has(unit.unitId)) result.set(unit.unitId, [])
+    result.get(unit.unitId).push(unit)
+  }
+  return result
+}
+
+function scalarRecord(index, unitId) {
+  const matches = index.get(unitId) ?? []
+  return matches.length === 1 && matches[0].valueCount === 1 ? matches[0] : null
+}
+
+function hash32(value) {
+  return `0x${(value >>> 0).toString(16).toUpperCase().padStart(8, '0')}`
+}
+
+function parseInventory(uintUnits, intUnits, boolUnits) {
+  const uintByType = new Map()
+  const intByType = new Map()
+  const boolByType = new Map()
+  const buildTypeIndex = (units, target) => {
+    const types = new Map()
+    for (const unit of units) {
+      if (!types.has(unit.idType)) types.set(unit.idType, [])
+      types.get(unit.idType).push(unit)
+    }
+    for (const [idType, entries] of types) target.set(idType, indexUnits(entries, idType))
+  }
+  buildTypeIndex(uintUnits, uintByType)
+  buildTypeIndex(intUnits, intByType)
+  buildTypeIndex(boolUnits, boolByType)
+
+  const record = (table, idType, unitId) => scalarRecord(table.get(idType) ?? new Map(), unitId)
+  const counter = (idType) => {
+    const rows = uintByType.get(idType) ?? new Map()
+    if (!rows.size) return { ambiguous: false, value: null, offset: null, unitId: null }
+    const matches = (rows.get(0) ?? []).concat(rows.get(4) ?? [])
+    if (matches.length !== 1 || matches[0].valueCount !== 1) return { ambiguous: true, value: null, offset: null }
+    return { ambiguous: false, value: matches[0].firstValue >>> 0, offset: matches[0].firstValueOffset, unitId: matches[0].unitId }
+  }
+  const serialState = (idType, baseUnitId) => {
+    const entriesByUnit = uintByType.get(idType) ?? new Map()
+    let max = 0
+    let ambiguous = false
+    for (const [unitId, entries] of entriesByUnit) {
+      if (unitId < baseUnitId) continue
+      if (entries.length !== 1 || entries[0].valueCount !== 1) ambiguous = true
+      for (const entry of entries) {
+        if (entry.firstValue !== null) max = Math.max(max, entry.firstValue >>> 0)
+      }
+    }
+    return { max, ambiguous }
+  }
+  const slots = ({ kind, config, signedTypes }) => {
+    const hashIndex = uintByType.get(config.hashIdType) ?? new Map()
+    const units = [...hashIndex.keys()].filter((unitId) => unitId >= config.baseUnitId).sort((a, b) => a - b)
+    const rows = []
+
+    for (const unitId of units) {
+      const hash = record(uintByType, config.hashIdType, unitId)
+      if (!hash) {
+        rows.push({
+          kind, unitId, hash: null, hashText: 'Ambiguous hash record', empty: false,
+          serial: null, level: null, ownerHash: null, flags: null, active: null,
+          lanes: Array.from({ length: config.traitLanes }, () => ({ hash: 0, level: null, hashOffset: null, levelOffset: null, editable: false })),
+          editable: false, cloneable: false,
+          offsets: { hash: null, serial: null, level: null, owner: null, flags: null, active: null },
+        })
+        continue
+      }
+      const lanes = Array.from({ length: config.traitLanes }, (_, lane) => {
+        const base = config.traitBaseUnitId + (unitId - config.baseUnitId) * 100 + lane
+        const traitHash = record(uintByType, 1701, base)
+        const traitLevel = record(intByType, 1702, base)
+        return {
+          hash: traitHash?.firstValue >>> 0,
+          level: traitLevel?.firstValue ?? null,
+          hashOffset: traitHash?.firstValueOffset ?? null,
+          levelOffset: traitLevel?.firstValueOffset ?? null,
+          editable: Boolean(traitHash && traitLevel),
+        }
+      })
+      const itemLevel = signedTypes.length ? record(intByType, signedTypes[0], unitId) : null
+      const serial = record(uintByType, config.serialIdType, unitId)
+      const owner = config.ownerIdType ? record(uintByType, config.ownerIdType, unitId) : null
+      const flags = record(uintByType, config.flagsIdType, unitId)
+      const active = config.activeIdType ? record(boolByType, config.activeIdType, unitId) : null
+      const empty = (hash.firstValue >>> 0) === EMPTY_HASH
+      const required = [hash, serial, flags, ...lanes.flatMap((lane) => lane.editable ? [] : [null])]
+      if (signedTypes.length) required.push(itemLevel)
+      if (config.ownerIdType) required.push(owner)
+      if (config.activeIdType) required.push(active)
+      rows.push({
+        kind,
+        unitId,
+        hash: hash.firstValue >>> 0,
+        hashText: hash32(hash.firstValue),
+        empty,
+        serial: serial ? serial.firstValue >>> 0 : null,
+        level: itemLevel?.firstValue ?? null,
+        ownerHash: owner ? owner.firstValue >>> 0 : null,
+        flags: flags ? flags.firstValue >>> 0 : null,
+        active: active?.firstValue ?? null,
+        lanes,
+        editable: required.every(Boolean),
+        cloneable: !empty && required.every(Boolean),
+        offsets: {
+          hash: hash.firstValueOffset,
+          serial: serial?.firstValueOffset ?? null,
+          level: itemLevel?.firstValueOffset ?? null,
+          owner: owner?.firstValueOffset ?? null,
+          flags: flags?.firstValueOffset ?? null,
+          active: active?.firstValueOffset ?? null,
+        },
+      })
+    }
+    const maxCount = counter(config.maxCountIdType)
+    const serials = serialState(config.serialIdType, config.baseUnitId)
+    const available = rows.filter((row) => row.empty && row.editable).length
+    return { rows, occupied: rows.filter((row) => !row.empty).length, available, maxCount, maxSerial: serials.max, serialAmbiguous: serials.ambiguous }
+  }
+
+  return {
+    sigils: slots({ kind: 'sigil', config: SIGIL, signedTypes: [SIGIL.levelIdType] }),
+    wrightstones: slots({ kind: 'wrightstone', config: WRIGHTSTONE, signedTypes: [] }),
+  }
 }
 
 function decodeLevel(levelBit) {
@@ -187,6 +341,7 @@ export function parseSave(bytes) {
   const version = versionPosition === null ? null : view.getUint32(slotOffset + versionPosition, true)
   const uintUnits = parseUnitTable(view, slotOffset, slotLength, rootPosition, 7, false, 'Unsigned save data')
   const intUnits = parseUnitTable(view, slotOffset, slotLength, rootPosition, 6, true, 'Signed save data')
+  const boolUnits = parseUnitTable(view, slotOffset, slotLength, rootPosition, 1, false, 'Boolean save data', 1)
 
   const characterUnits = uintUnits.filter((unit) => (
     unit.idType === CHARACTER_ID_TYPE &&
@@ -204,16 +359,6 @@ export function parseSave(bytes) {
     characterHashes.add(character.firstValue >>> 0)
   }
 
-  const indexUnits = (units, idType) => {
-    const result = new Map()
-    for (const unit of units) {
-      if (unit.idType !== idType) continue
-      const key = unit.unitId
-      if (!result.has(key)) result.set(key, [])
-      result.get(key).push(unit)
-    }
-    return result
-  }
   const attributesByUnit = indexUnits(uintUnits, OVERMASTERY_ATTRIBUTE_ID_TYPE)
   const levelsByUnit = indexUnits(intUnits, OVERMASTERY_LEVEL_ID_TYPE)
 
@@ -283,6 +428,7 @@ export function parseSave(bytes) {
     slotOffset + checksumEnd,
     HASH_SEED,
   )
+  const inventory = parseInventory(uintUnits, intUnits, boolUnits)
 
   return {
     slotOffset,
@@ -294,6 +440,7 @@ export function parseSave(bytes) {
     checksumStart: slotOffset + sectionStart,
     checksumEnd: slotOffset + checksumEnd,
     checksumValid,
+    inventory,
     characters,
   }
 }
@@ -396,15 +543,141 @@ export function changesForSave(characters) {
   return changes
 }
 
-export function createEditedSave(bytes, parsed, changes) {
+export function parseHashInput(value, label = 'Hash') {
+  const text = String(value ?? '').trim()
+  if (!text) fail(`${label} is required.`)
+  const isHex = /^0x[0-9a-f]{1,8}$/i.test(text)
+  const isDecimal = /^\d+$/.test(text)
+  if (!isHex && !isDecimal) fail(`${label} must be a 32-bit decimal or 0x-prefixed hexadecimal value.`)
+  const value32 = Number(isHex ? Number.parseInt(text.slice(2), 16) : text)
+  if (!Number.isSafeInteger(value32) || value32 < 0 || value32 > 0xffffffff) fail(`${label} is outside the uint32 range.`)
+  if (value32 === 0 || value32 === EMPTY_HASH) fail(`${label} cannot use an empty-slot value.`)
+  return value32 >>> 0
+}
+
+export function validateCustomInventoryAddition(kind, input) {
+  if (kind !== 'sigil' && kind !== 'wrightstone') fail('Unknown inventory type.')
+  const hash = parseHashInput(input.hash, kind === 'sigil' ? 'Sigil hash' : 'Wrightstone hash')
+  const level = kind === 'sigil' ? Number(input.level) : null
+  if (kind === 'sigil' && (!Number.isInteger(level) || level < 1 || level > 15)) fail('Sigil level must be from 1 to 15.')
+  const laneCount = kind === 'sigil' ? SIGIL.traitLanes : WRIGHTSTONE.traitLanes
+  const lanes = Array.from({ length: laneCount }, (_, index) => {
+    const source = input.lanes?.[index] ?? {}
+    const laneHashText = String(source.hash ?? '').trim()
+    const laneLevelText = String(source.level ?? '').trim()
+    if (index === 0 && !laneHashText) fail('Trait 1 hash is required.')
+    if (!laneHashText && !laneLevelText) return { hash: EMPTY_HASH, level: 0 }
+    if (!laneHashText || !laneLevelText) fail(`Trait ${index + 1} needs both a hash and a level.`)
+    const traitHash = parseHashInput(laneHashText, `Trait ${index + 1} hash`)
+    const traitLevel = Number(laneLevelText)
+    if (!Number.isInteger(traitLevel) || traitLevel < 1 || traitLevel > 50) {
+      fail(`Trait ${index + 1} level must be from 1 to 50.`)
+    }
+    return { hash: traitHash, level: traitLevel }
+  })
+  return { kind, hash, level, lanes, custom: true }
+}
+
+function validateQueuedAddition(addition, kind) {
+  if (!addition || addition.kind !== kind) fail('An inventory addition has the wrong item type.')
+  const hash = Number(addition.hash)
+  if (!Number.isInteger(hash) || hash <= 0 || hash > 0xffffffff || (hash >>> 0) === EMPTY_HASH) fail('An inventory item has an invalid hash.')
+  const level = kind === 'sigil' ? Number(addition.level) : null
+  if (kind === 'sigil' && (!Number.isInteger(level) || level < 1 || level > 0x7fffffff)) fail('An inventory item has an invalid level.')
+  const laneCount = kind === 'sigil' ? SIGIL.traitLanes : WRIGHTSTONE.traitLanes
+  if (!Array.isArray(addition.lanes) || addition.lanes.length !== laneCount) fail('An inventory item has incomplete trait lanes.')
+  const lanes = addition.lanes.map((lane, index) => {
+    const laneHash = Number(lane?.hash)
+    const laneLevel = Number(lane?.level)
+    if (!Number.isInteger(laneHash) || laneHash < 0 || laneHash > 0xffffffff) fail(`Trait ${index + 1} has an invalid hash.`)
+    if (!Number.isInteger(laneLevel) || laneLevel < 0 || laneLevel > 0x7fffffff) fail(`Trait ${index + 1} has an invalid level.`)
+    if ((laneHash === 0 || (laneHash >>> 0) === EMPTY_HASH) !== (laneLevel === 0)) fail(`Trait ${index + 1} has a mismatched empty hash and level.`)
+    if (index === 0 && (laneHash === 0 || (laneHash >>> 0) === EMPTY_HASH)) fail('Trait 1 cannot be empty.')
+    return { hash: laneHash >>> 0, level: laneLevel }
+  })
+  return { kind, hash: hash >>> 0, level, lanes }
+}
+
+function planInventoryAdditions(parsed, additions) {
+  const patches = []
+  const expected = []
+  if (!Array.isArray(additions)) fail('Bag additions are malformed.')
+  if (additions.some((addition) => !['sigil', 'wrightstone'].includes(addition?.kind))) fail('A bag addition has an unknown item type.')
+  for (const kind of ['sigil', 'wrightstone']) {
+    const list = additions.filter((addition) => addition.kind === kind).map((addition) => validateQueuedAddition(addition, kind))
+    if (!list.length) continue
+    const bucket = parsed.inventory[kind === 'sigil' ? 'sigils' : 'wrightstones']
+    const eligible = bucket.rows.filter((row) => row.empty && row.editable)
+    if (list.length > eligible.length) fail(`Not enough empty ${kind === 'sigil' ? 'sigil' : 'Wrightstone'} slots: need ${list.length}, have ${eligible.length}.`)
+    if (bucket.maxCount.ambiguous) fail(`The ${kind} slot counter has duplicate or incomplete records; this save cannot be edited safely.`)
+    if (bucket.serialAmbiguous) fail(`The ${kind} slot serials have duplicate or incomplete records; this save cannot be edited safely.`)
+
+    const firstSerial = Math.max(bucket.maxSerial, bucket.maxCount.value ?? 0) + 1
+    if (firstSerial + list.length - 1 > 0xffffffff) fail(`${kind} slot IDs exceed the supported uint32 range.`)
+    if (bucket.maxCount.offset !== null) {
+      patches.push({ offset: bucket.maxCount.offset, value: firstSerial + list.length - 1, type: 'uint32' })
+    }
+
+    list.forEach((item, index) => {
+      const target = eligible[index]
+      const serial = firstSerial + index
+      const put = (offset, value, type = 'uint32') => {
+        if (offset === null || offset === undefined) fail(`${kind} slot ${target.unitId} is incomplete.`)
+        patches.push({ offset, value, type })
+      }
+      put(target.offsets.hash, item.hash)
+      put(target.offsets.serial, serial)
+      if (kind === 'sigil') {
+        put(target.offsets.level, item.level, 'int32')
+        put(target.offsets.owner, EMPTY_HASH)
+        put(target.offsets.flags, 2)
+      } else {
+        put(target.offsets.active, 0, 'uint8')
+        put(target.offsets.flags, 2)
+      }
+      item.lanes.forEach((lane, laneIndex) => {
+        const targetLane = target.lanes[laneIndex]
+        put(targetLane.hashOffset, lane.hash)
+        put(targetLane.levelOffset, lane.level, 'int32')
+      })
+      expected.push({ kind, unitId: target.unitId, serial, ...item, ownerHash: kind === 'sigil' ? EMPTY_HASH : undefined, flags: 2, active: kind === 'wrightstone' ? 0 : undefined })
+    })
+  }
+  return { patches, expected }
+}
+
+function verifyInventoryPlan(inventory, expected) {
+  for (const item of expected) {
+    const rows = inventory[item.kind === 'sigil' ? 'sigils' : 'wrightstones'].rows
+    const row = rows.find((entry) => entry.unitId === item.unitId)
+    if (!row || row.empty || row.hash !== item.hash || row.serial !== item.serial || row.level !== item.level || row.flags !== item.flags) {
+      fail(`Read-back verification failed for ${item.kind} slot ${item.unitId}.`)
+    }
+    if (item.kind === 'sigil' && row.ownerHash !== item.ownerHash) fail(`Read-back verification failed for sigil assignment in slot ${item.unitId}.`)
+    if (item.kind === 'wrightstone' && row.active !== item.active) fail(`Read-back verification failed for Wrightstone state in slot ${item.unitId}.`)
+    for (let lane = 0; lane < item.lanes.length; lane += 1) {
+      if (row.lanes[lane]?.hash !== item.lanes[lane].hash || row.lanes[lane]?.level !== item.lanes[lane].level) {
+        fail(`Read-back verification failed for ${item.kind} slot ${item.unitId}, trait ${lane + 1}.`)
+      }
+    }
+  }
+}
+
+export function createEditedSave(bytes, parsed, changes, inventoryAdds = []) {
   if (!parsed.checksumValid) fail('The input save checksum is invalid; editing is disabled for safety.')
-  if (!changes.length) fail('There are no overmastery changes to download.')
+  if (!changes.length && !inventoryAdds.length) fail('There are no changes to download.')
+  const inventoryPlan = planInventoryAdditions(parsed, inventoryAdds)
   const output = new Uint8Array(bytes)
   const view = new DataView(output.buffer, output.byteOffset, output.byteLength)
 
   for (const change of changes) {
     view.setUint32(change.slot.attributeOffset, change.hash, true)
     view.setInt32(change.slot.levelOffset, change.levelBit, true)
+  }
+  for (const patch of inventoryPlan.patches) {
+    if (patch.type === 'int32') view.setInt32(patch.offset, patch.value, true)
+    else if (patch.type === 'uint8') view.setUint8(patch.offset, patch.value)
+    else view.setUint32(patch.offset, patch.value, true)
   }
 
   const checksum = xxhash64(view, parsed.checksumStart, parsed.checksumEnd, HASH_SEED)
@@ -421,6 +694,7 @@ export function createEditedSave(bytes, parsed, changes) {
       fail(`Read-back verification failed for ${change.character.name}, slot ${change.slot.index + 1}.`)
     }
   }
+  verifyInventoryPlan(reparsed.inventory, inventoryPlan.expected)
   return output
 }
 
