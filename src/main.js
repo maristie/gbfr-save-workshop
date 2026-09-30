@@ -26,6 +26,7 @@ const state = {
   activeTab: 'overmastery',
   inventoryAdds: [],
   inventoryFilter: { sigil: '', wrightstone: '' },
+  catalogDrafts: { sigil: null, wrightstone: null },
   nextDraftId: 1,
   openRawKind: '',
 }
@@ -250,37 +251,65 @@ function renderInventoryCategory(kind) {
 function renderCatalogForm(kind) {
   const items = inventoryCatalog(kind)
   if (!items.length) return '<p class="inventory-empty">The item catalog is unavailable.</p>'
-  const item = items[0]
-  const primaryTrait = primaryTraitFor(item)
-  if (!primaryTrait) return '<p class="inventory-empty">The item catalog is unavailable.</p>'
-  const disabled = !state.parsed.checksumValid || inventoryBucket(kind).available - queuedFor(kind) <= 0 || inventoryBucket(kind).maxCount.ambiguous || inventoryBucket(kind).serialAmbiguous
-  const itemOptions = `<option value="" disabled selected>Choose a ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'}</option>${items.map((entry) => `<option value="${escapeHTML(entry.id)}">${escapeHTML(itemLabel(kind, entry.hash))}</option>`).join('')}`
+  const draft = state.catalogDrafts[kind] ?? {}
+  const itemId = String(draft.catalogItemId ?? '')
+  const item = (kind === 'sigil' ? sigilsById : wrightstonesById).get(itemId) ?? null
+  const primaryTrait = item ? primaryTraitFor(item) : null
+  if (item && !primaryTrait) return '<p class="inventory-empty">The item catalog is unavailable.</p>'
+  const bucket = inventoryBucket(kind)
+  const remaining = Math.max(0, bucket.available - queuedFor(kind))
+  const disabled = !state.parsed.checksumValid || remaining <= 0 || bucket.maxCount.ambiguous || bucket.serialAmbiguous
+  const quantity = Math.max(1, Number.parseInt(draft.quantity, 10) || 1)
+  const itemOptions = `<option value="" disabled${item ? '' : ' selected'}>Choose a ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'}</option>${items.map((entry) => `<option value="${escapeHTML(entry.id)}"${entry.id === itemId ? ' selected' : ''}>${escapeHTML(itemLabel(kind, entry.hash))}</option>`).join('')}`
   const allTraits = INVENTORY_CATALOG.traits
-  const secondaryTraits = kind === 'sigil' ? optionsForSigil(item) : allTraits
-  const secondaryDisabled = kind === 'sigil'
+  const secondaryTraits = kind === 'sigil' ? (item ? optionsForSigil(item) : []) : allTraits
+  const secondaryDisabled = kind === 'sigil' && (!item || secondaryTraits.length === 0)
   const secondTraitLabel = kind === 'sigil' ? 'SECONDARY TRAIT' : 'ADDITIONAL TRAIT 1'
+  const secondaryHash = item?.fixedSecondary ? item.secondaryTraitHashes[0] : String(draft.trait1Hash ?? '')
+  const secondaryTrait = secondaryHash ? traitForHash(Number(secondaryHash)) : null
+  const thirdTraitHash = String(draft.trait2Hash ?? '')
+  const thirdTraitDefinition = thirdTraitHash ? traitForHash(Number(thirdTraitHash)) : null
+  const primaryLevel = String(draft.trait0Level ?? '1')
+  const secondaryLevel = String(draft.trait1Level ?? '')
+  const secondaryLevelRequired = Boolean(item?.fixedSecondary && secondaryTraits.length)
   const thirdTrait = kind === 'wrightstone' ? `<div class="raw-lane">
-    <label class="raw-field"><span>ADDITIONAL TRAIT 2</span><select data-role="trait-select" name="trait2Hash">${traitOptions(allTraits, true)}</select></label>
-    <label class="raw-field"><span>LEVEL 3</span><input name="trait2Level" type="number" min="1" max="50" placeholder="Optional" /></label>
+    <label class="raw-field"><span>ADDITIONAL TRAIT 2</span><select data-role="trait-select" name="trait2Hash">${traitOptions(allTraits, true, String(draft.trait2Hash ?? ''))}</select></label>
+    <label class="raw-field"><span>LEVEL 3</span><input name="trait2Level" type="number" min="1" max="${thirdTraitDefinition?.maxLevel ?? 50}" value="${escapeHTML(String(draft.trait2Level ?? ''))}" placeholder="Optional" /></label>
   </div>` : ''
-  const initialSecondaryHash = kind === 'sigil' && item.fixedSecondary ? item.secondaryTraitHashes[0] : ''
   const extraTrait = kind === 'sigil'
-    ? `<select data-role="sigil-secondary" name="trait1Hash" ${secondaryDisabled ? 'disabled' : ''}>${traitOptions(secondaryTraits, !item.fixedSecondary, initialSecondaryHash)}</select>`
-    : `<select data-role="trait-select" name="trait1Hash">${traitOptions(allTraits, true)}</select>`
+    ? `<select data-role="sigil-secondary" name="trait1Hash" ${secondaryDisabled ? 'disabled' : ''}>${traitOptions(secondaryTraits, !item?.fixedSecondary, secondaryHash)}</select>`
+    : `<select data-role="trait-select" name="trait1Hash">${traitOptions(allTraits, true, String(draft.trait1Hash ?? ''))}</select>`
   const additionalLane = `<div class="raw-lane">
     <label class="raw-field"><span>${secondTraitLabel}</span>${extraTrait}</label>
-    <label class="raw-field"><span>LEVEL 2</span><input name="trait1Level" type="number" min="1" max="50" placeholder="Optional" ${secondaryDisabled ? 'disabled' : ''}${item.fixedSecondary ? ' required' : ''} /></label>
+    <label class="raw-field"><span>LEVEL 2</span><input name="trait1Level" type="number" min="1" max="${secondaryTrait?.maxLevel ?? 50}" value="${escapeHTML(secondaryLevel)}" placeholder="Optional" ${secondaryDisabled ? 'disabled' : ''}${secondaryLevelRequired ? 'required' : ''} /></label>
   </div>`
   return `<form class="raw-add-form" data-kind="${kind}">
-    <label class="raw-field"><span>${kind === 'sigil' ? 'SIGIL TYPE' : 'WRIGHTSTONE TYPE'} *</span><select data-role="catalog-item" name="catalogItemId" required>${itemOptions}</select></label>
-    ${kind === 'sigil' ? '<label class="raw-field"><span>SIGIL LEVEL *</span><input name="level" type="number" min="1" max="15" value="15" required /></label>' : ''}
     <div class="raw-lane">
-      <label class="raw-field"><span>PRIMARY TRAIT · <span data-role="primary-trait-name">Choose an item to see its primary trait</span></span><input name="trait0Hash" type="hidden" value="" /></label>
-      <label class="raw-field"><span>LEVEL 1 *</span><input data-role="primary-level" name="trait0Level" type="number" min="1" max="50" value="1" required /></label>
+      <label class="raw-field"><span>${kind === 'sigil' ? 'SIGIL TYPE' : 'WRIGHTSTONE TYPE'} *</span><select data-role="catalog-item" name="catalogItemId" required>${itemOptions}</select></label>
+      <label class="raw-field"><span>QUANTITY *</span><input name="quantity" type="number" min="1" max="${Math.max(1, remaining)}" value="${quantity}" ${disabled ? 'disabled' : 'required'} /></label>
+    </div>
+    ${kind === 'sigil' ? `<label class="raw-field"><span>SIGIL LEVEL *</span><input name="level" type="number" min="1" max="15" value="${escapeHTML(String(draft.level ?? '15'))}" required /></label>` : ''}
+    <div class="raw-lane">
+      <label class="raw-field"><span>PRIMARY TRAIT · <span data-role="primary-trait-name">${escapeHTML(primaryTrait?.name ?? 'Choose an item to see its primary trait')}</span></span><input name="trait0Hash" type="hidden" value="${primaryTrait?.hash ?? ''}" /></label>
+      <label class="raw-field"><span>LEVEL 1 *</span><input data-role="primary-level" name="trait0Level" type="number" min="1" max="${primaryTrait?.maxLevel ?? 50}" value="${escapeHTML(primaryLevel)}" required /></label>
     </div>
     <div class="raw-lanes">${additionalLane}${thirdTrait}</div>
     <button class="primary-button raw-submit" type="submit" ${disabled ? 'disabled' : ''}>Add ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'}</button>
   </form>`
+}
+
+function rememberCatalogForm(form) {
+  const value = (name) => form.elements.namedItem(name)?.value ?? ''
+  state.catalogDrafts[form.dataset.kind] = {
+    catalogItemId: value('catalogItemId'),
+    quantity: value('quantity'),
+    level: value('level'),
+    trait0Level: value('trait0Level'),
+    trait1Hash: value('trait1Hash'),
+    trait1Level: value('trait1Level'),
+    trait2Hash: value('trait2Hash'),
+    trait2Level: value('trait2Level'),
+  }
 }
 
 function refreshCatalogForm(form) {
@@ -305,7 +334,10 @@ function refreshCatalogForm(form) {
   secondarySelect.disabled = allowedTraits.length === 0
   if (item.fixedSecondary && allowedTraits.length) secondarySelect.value = item.secondaryTraitHashes[0]
   else if (allowedTraits.some((trait) => trait.hash === selectedHash)) secondarySelect.value = selectedHash
-  else secondarySelect.value = ''
+  else {
+    secondarySelect.value = ''
+    secondaryLevel.value = ''
+  }
   secondaryLevel.disabled = allowedTraits.length === 0
   secondaryLevel.required = Boolean(item.fixedSecondary && allowedTraits.length)
   if (allowedTraits.length === 0) secondaryLevel.value = ''
@@ -317,10 +349,14 @@ function refreshCatalogForm(form) {
 }
 
 function updateTraitLevelLimit(select) {
-  const selected = select.selectedOptions[0]
-  const maxLevel = Number(selected?.dataset.maxLevel) || 50
   const levelInput = select.closest('.raw-lane')?.querySelector('input[type="number"]')
   if (!levelInput) return
+  if (!select.value) {
+    levelInput.value = ''
+    return
+  }
+  const selected = select.selectedOptions[0]
+  const maxLevel = Number(selected?.dataset.maxLevel) || 50
   levelInput.max = maxLevel
   if (Number(levelInput.value) > maxLevel) levelInput.value = maxLevel
 }
@@ -502,6 +538,8 @@ function bindEvents() {
       select.addEventListener('change', () => updateTraitLevelLimit(select))
     })
     form.querySelector('[data-role="sigil-secondary"]')?.addEventListener('change', (event) => updateTraitLevelLimit(event.currentTarget))
+    form.addEventListener('input', () => rememberCatalogForm(form))
+    form.addEventListener('change', () => rememberCatalogForm(form))
   })
 
   app.querySelectorAll('[data-action]').forEach((element) => {
@@ -608,12 +646,17 @@ function queueInventoryCopy(kind, unitId) {
 
 function queueCatalogInventoryItem(event, form) {
   event.preventDefault()
+  rememberCatalogForm(form)
   const kind = form.dataset.kind
   const data = new FormData(form)
   try {
     const itemId = String(data.get('catalogItemId') ?? '')
     const item = (kind === 'sigil' ? sigilsById : wrightstonesById).get(itemId)
     if (!item) throw new Error('Choose an item from the catalog.')
+    const quantity = Number(data.get('quantity'))
+    if (!Number.isInteger(quantity) || quantity < 1) throw new Error('Quantity must be a positive whole number.')
+    const remaining = inventoryBucket(kind).available - queuedFor(kind)
+    if (quantity > remaining) throw new Error(`Only ${Math.max(0, remaining)} empty ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'} slots remain.`)
     const primaryTrait = primaryTraitFor(item)
     if (!primaryTrait) throw new Error('The selected item has no recognized primary trait.')
     const secondaryHash = data.get('trait1Hash')
@@ -632,12 +675,16 @@ function queueCatalogInventoryItem(event, form) {
       level: data.get('level'),
       lanes,
     })
-    if (inventoryBucket(kind).available - queuedFor(kind) <= 0) throw new Error(`There are no reusable empty ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'} slots left.`)
     if (inventoryBucket(kind).maxCount.ambiguous || inventoryBucket(kind).serialAmbiguous) throw new Error(`The ${kind} slot counter or serial records are ambiguous, so this save cannot be edited safely.`)
-    addition.draftId = state.nextDraftId++
-    addition.catalogItemId = item.id
-    addition.itemName = itemLabel(kind, item.hash)
-    state.inventoryAdds.push(addition)
+    for (let index = 0; index < quantity; index += 1) {
+      state.inventoryAdds.push({
+        ...addition,
+        draftId: state.nextDraftId++,
+        catalogItemId: item.id,
+        itemName: itemLabel(kind, item.hash),
+        lanes: addition.lanes.map((lane) => ({ ...lane })),
+      })
+    }
     state.activeTab = 'inventory'
     state.openRawKind = kind
     state.error = ''
@@ -683,6 +730,7 @@ async function loadFile(file) {
     state.filter = ''
     state.activeTab = 'overmastery'
     state.inventoryAdds = []
+    state.catalogDrafts = { sigil: null, wrightstone: null }
     state.inventoryFilter = { sigil: '', wrightstone: '' }
     state.openRawKind = ''
     if (!parsed.checksumValid) state.notice = ''
