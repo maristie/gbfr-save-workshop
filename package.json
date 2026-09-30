@@ -1,0 +1,11 @@
+{
+  "name": "gbfr-overmastery-web",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A local-first browser editor for Granblue Fantasy: Relink save-file overmasteries",
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "build": "node build.mjs"
+  }
+}
