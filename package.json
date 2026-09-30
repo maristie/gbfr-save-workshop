@@ -2,8 +2,17 @@
   "name": "gbfr-save-workshop",
   "private": true,
   "version": "0.1.0",
+  "license": "MIT",
   "type": "module",
-  "description": "A local-first browser editor for Granblue Fantasy: Relink save files",
+  "description": "A local-first browser editor for Granblue Fantasy: Relink saves, overmasteries, Sigils, and Wrightstones",
+  "homepage": "https://maristie.com/gbfr-save-workshop/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maristie/gbfr-save-workshop.git"
+  },
+  "bugs": {
+    "url": "https://github.com/maristie/gbfr-save-workshop/issues"
+  },
   "scripts": {
     "dev": "node server.mjs",
     "start": "node server.mjs",
