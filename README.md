@@ -14,6 +14,10 @@ Open [http://127.0.0.1:8000](http://127.0.0.1:8000). To stop the local server, p
 
 The app is deployed to [GitHub Pages](https://maristie.com/gbfr-save-workshop/). The site makes no save-file upload requests.
 
+## Languages
+
+Use the language selector in the header to switch between English, Japanese, Simplified Chinese, and Traditional Chinese. The app remembers this preference in the browser. Interface labels, character names, overmastery stats, Sigils, and traits are localized. The four Wrightstone labels use descriptive translations and retain their English names in parentheses for cross-reference.
+
 ## Use
 
 1. Choose or drop a readable `.dat` save file.

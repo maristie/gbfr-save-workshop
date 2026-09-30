@@ -13,6 +13,18 @@ import {
   validateCustomInventoryAddition,
 } from './save-format.js'
 import { INVENTORY_CATALOG } from './inventory-catalog.js'
+import {
+  allInventoryTermNames,
+  characterSearchNames,
+  initialLanguage,
+  LANGUAGE_OPTIONS,
+  localizeCharacter,
+  localizeDOM,
+  localizeInventoryTerm,
+  localizeText,
+  normalizeLanguage,
+  saveLanguage,
+} from './localization.js'
 
 const app = document.querySelector('#app')
 const state = {
@@ -29,6 +41,7 @@ const state = {
   catalogDrafts: { sigil: null, wrightstone: null },
   nextDraftId: 1,
   openRawKind: '',
+  language: initialLanguage(),
 }
 
 const escapeHTML = (value) => String(value).replace(/[&<>"']/g, (character) => ({
@@ -57,21 +70,24 @@ function traitForHash(hash) {
 }
 
 function traitLabel(hash) {
-  return traitForHash(hash)?.name ?? 'Uncatalogued trait'
+  const trait = traitForHash(hash)
+  return trait ? localizeInventoryTerm(trait.name, 'trait', state.language) : localizeText('Uncatalogued trait', state.language)
 }
 
 function itemLabel(kind, hash) {
   const item = itemForHash(kind, hash)
-  if (!item) return `Uncatalogued ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'}`
+  if (!item) return localizeText(`Uncatalogued ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'}`, state.language)
+  const name = localizeInventoryTerm(item.name, kind, state.language)
   if (kind === 'sigil' && duplicateSigilNames.has(item.name)) {
-    return `${item.name} · ${item.fixedSecondary ? 'fixed secondary' : 'selectable secondary'}`
+    const secondary = localizeText(item.fixedSecondary ? 'fixed secondary' : 'selectable secondary', state.language)
+    return `${name} · ${secondary}`
   }
-  return item.name
+  return name
 }
 
 function traitOptions(traits, includeEmpty = false, selectedHash = '') {
-  const empty = includeEmpty ? '<option value="">No additional trait</option>' : ''
-  return `${empty}${traits.map((trait) => `<option value="${trait.hash}" data-max-level="${trait.maxLevel}"${trait.hash === selectedHash ? ' selected' : ''}>${escapeHTML(trait.name)}</option>`).join('')}`
+  const empty = includeEmpty ? `<option value="">${escapeHTML(localizeText('No additional trait', state.language))}</option>` : ''
+  return `${empty}${traits.map((trait) => `<option value="${trait.hash}" data-max-level="${trait.maxLevel}"${trait.hash === selectedHash ? ' selected' : ''}>${escapeHTML(traitLabel(Number(trait.hash)))}</option>`).join('')}`
 }
 
 function optionsForSigil(item) {
@@ -108,7 +124,7 @@ function statOptions(slot) {
   const options = [...groups.values()].map((group) => {
     const rows = group.rows.map((stat) => {
       const selected = stat.hash === slot.draftHash ? ' selected' : ''
-      const suffix = stat.hash === stat.canonical ? 'Standard' : `Compatibility ID · ${hashToText(stat.hash)}`
+      const suffix = stat.hash === stat.canonical ? localizeText('Standard', state.language) : `${localizeText('Compatibility ID', state.language)} · ${hashToText(stat.hash)}`
       return `<option value="${stat.hash.toString(16).toUpperCase()}"${selected}>${escapeHTML(suffix)}</option>`
     }).join('')
     return `<optgroup label="${escapeHTML(group.name)}">${rows}</optgroup>`
@@ -130,7 +146,7 @@ function levelOptions(slot) {
     const selected = level === levelNumber ? ' selected' : ''
     return `<option value="${level}"${selected}>LV ${level} <span>· ${escapeHTML(value)}</span></option>`
   }).join('')
-  const rawOption = `<option value="community-raw"${communityRaw ? ' selected' : ''}>Community raw preset · 0x03FF</option>`
+  const rawOption = `<option value="community-raw"${communityRaw ? ' selected' : ''}>${escapeHTML(localizeText('Community raw preset · 0x03FF', state.language))}</option>`
   return `${invalidOption}<option value=""${isEmptySlot(slot) ? ' selected' : ''}>—</option>${options}${rawOption}`
 }
 
@@ -151,14 +167,14 @@ function slotChanged(slot) {
 
 function characterList() {
   const characters = state.parsed?.characters ?? []
-  const filtered = characters.filter((character) => `${character.name} ${character.hashText}`.toLowerCase().includes(state.filter.toLowerCase()))
+  const filtered = characters.filter((character) => `${characterSearchNames(character.name).join(' ')} ${character.hashText}`.toLowerCase().includes(state.filter.toLowerCase()))
   const rows = filtered.map((character) => {
     const available = character.slots.filter((slot) => slot.editable).length
     const filled = character.slots.filter((slot) => slot.editable && !isEmptySlot(slot)).length
     const selected = character.unitId === state.selectedUnitId
     const changed = character.slots.some(slotChanged)
     return `<button class="character-row${selected ? ' is-selected' : ''}" type="button" data-action="select-character" data-unit-id="${character.unitId}" aria-pressed="${selected}">
-      <span class="character-mark">${escapeHTML(character.name.slice(0, 1).toUpperCase())}</span>
+      <span class="character-mark">${escapeHTML(localizeCharacter(character.name, state.language).slice(0, 1).toUpperCase())}</span>
       <span class="character-copy"><strong>${escapeHTML(character.name)}</strong><small>${character.hashText} · ${filled}/${available} filled</small></span>
       ${changed ? '<span class="change-dot" aria-label="Edited"></span>' : ''}
       <span class="row-chevron" aria-hidden="true">›</span>
@@ -200,8 +216,13 @@ function inventoryBucket(kind) {
 }
 
 function inventoryRowSearchText(kind, row) {
-  return [itemLabel(kind, row.hash), row.unitId, row.level, ...row.lanes.map((lane) => `${traitLabel(lane.hash)} ${lane.level ?? ''}`)]
-    .join(' ').toLowerCase()
+  const item = itemForHash(kind, row.hash)
+  const itemTerms = item ? allInventoryTermNames(item.name, kind) : [itemLabel(kind, row.hash)]
+  const traitTerms = row.lanes.flatMap((lane) => {
+    const trait = traitForHash(lane.hash)
+    return [...(trait ? allInventoryTermNames(trait.name, 'trait') : [traitLabel(lane.hash)]), lane.level ?? '']
+  })
+  return [...itemTerms, row.unitId, row.level, ...traitTerms].join(' ').toLowerCase()
 }
 
 function renderInventoryCategory(kind) {
@@ -320,11 +341,14 @@ function refreshCatalogForm(form) {
   const primary = primaryTraitFor(item)
   if (!primary) return
   form.querySelector('[name="trait0Hash"]').value = primary.hash
-  form.querySelector('[data-role="primary-trait-name"]').textContent = primary.name
+  form.querySelector('[data-role="primary-trait-name"]').textContent = traitLabel(Number(primary.hash))
   const primaryLevel = form.querySelector('[data-role="primary-level"]')
   primaryLevel.max = primary.maxLevel
   if (Number(primaryLevel.value) > primary.maxLevel) primaryLevel.value = primary.maxLevel
-  if (kind !== 'sigil') return
+  if (kind !== 'sigil') {
+    localizeDOM(form, state.language)
+    return
+  }
 
   const secondarySelect = form.querySelector('[data-role="sigil-secondary"]')
   const secondaryLevel = form.querySelector('[name="trait1Level"]')
@@ -346,6 +370,7 @@ function refreshCatalogForm(form) {
     secondaryLevel.max = secondaryTrait.maxLevel
     if (Number(secondaryLevel.value) > secondaryTrait.maxLevel) secondaryLevel.value = secondaryTrait.maxLevel
   } else secondaryLevel.max = 50
+  localizeDOM(form, state.language)
 }
 
 function updateTraitLevelLimit(select) {
@@ -364,7 +389,7 @@ function updateTraitLevelLimit(select) {
 function renderInventoryPanel() {
   const queued = state.inventoryAdds
   const queuedMarkup = queued.length ? queued.map((addition) => `<div class="queue-item">
-    <span><strong>${escapeHTML(addition.itemName ?? itemLabel(addition.kind, addition.hash))}</strong></span>
+    <span><strong>${escapeHTML(itemLabel(addition.kind, addition.hash))}</strong></span>
     <small>${addition.kind === 'sigil' ? `Lv ${addition.level}` : `${addition.lanes.filter((lane) => lane.hash !== 0x887ae0b0 && lane.hash !== 0).length} traits`}${addition.sourceUnitId ? ` · copied from ${addition.sourceUnitId}` : ' · catalog selection'}</small>
     <button class="queue-remove" data-action="remove-queued" data-draft-id="${addition.draftId}" type="button" aria-label="Remove queued item">×</button>
   </div>`).join('') : '<p class="queue-empty">No bag additions queued.</p>'
@@ -410,7 +435,7 @@ function renderLoaded() {
         <span class="level-preview">${stat && slot.draftLevelBit === 0x03ff ? 'Community raw preset · 0x03FF' : stat && level ? `LV ${level} · ${escapeHTML(formatStatValue(stat, level))}` : '<span>Choose a stat and level</span>'}</span>
         ${alias ? `<span class="stored-id" title="Existing compatibility hash">${hashToText(rawHash)}</span>` : ''}
       </div>
-      ${slot.warnings.length ? `<div class="slot-warning"><span>!</span> ${slot.warnings.map(escapeHTML).join(' ')}</div>` : ''}
+      ${slot.warnings.length ? `<div class="slot-warning"><span>!</span> ${slot.warnings.map((warning) => escapeHTML(localizeText(warning, state.language))).join(' ')}</div>` : ''}
       ${slot.editable && !isEmptySlot(slot) ? `<button class="clear-slot" type="button" data-action="clear-slot" data-unit-id="${character.unitId}" data-slot-index="${slot.index}">Clear slot</button>` : ''}
     </article>`
   }).join('') : ''
@@ -438,7 +463,7 @@ function renderLoaded() {
       <section class="edit-panel">
         ${character ? `<div class="edit-heading">
           <div><p class="eyebrow">SAVED CHARACTER <span class="eyebrow-divider">/</span> UNIT ${character.unitId}</p><h2>${escapeHTML(character.name)}</h2><p class="edit-subtitle">Set all four saved slots. The 0x03FF community preset is experimental.</p></div>
-          <div class="character-seal">${escapeHTML(character.name.slice(0, 1).toUpperCase())}<span>GBFR</span></div>
+          <div class="character-seal">${escapeHTML(localizeCharacter(character.name, state.language).slice(0, 1).toUpperCase())}<span>GBFR</span></div>
         </div>
         <div class="slots-grid">${slotsMarkup}</div>
         ${!character.supported ? '<div class="alert alert-warning"><strong>This unit is not mapped as a playable character.</strong> Its saved overmastery slots are read-only.</div>' : character.slots.some((slot) => !slot.editable) ? '<div class="alert alert-warning"><strong>Some slots are read-only.</strong> One or more attribute/level pairs are missing or ambiguous in this save.</div>' : ''}
@@ -461,9 +486,10 @@ function formatBytes(size) {
 
 function render() {
   const changes = (() => { try { return currentChanges() } catch { return [] } })()
+  const languageOptions = LANGUAGE_OPTIONS.map(({ value, label }) => `<option value="${value}"${value === state.language ? ' selected' : ''}>${label}</option>`).join('')
   app.innerHTML = `<header class="topbar">
       <a class="brand" href="./" aria-label="Relink Save Workshop home"><span class="brand-mark"><i></i><i></i><i></i><i></i></span><span>RELINK <b>SAVE WORKSHOP</b></span></a>
-      <div class="topbar-right"><span class="local-badge"><span></span> LOCAL MODE</span><button class="top-open" data-action="open-file" type="button">${state.parsed ? 'Switch save' : 'Open save'} <span>↗</span></button></div>
+      <div class="topbar-right"><select id="language-select" class="language-select" aria-label="Language">${languageOptions}</select><span class="local-badge"><span></span> LOCAL MODE</span><button class="top-open" data-action="open-file" type="button">${state.parsed ? 'Switch save' : 'Open save'} <span>↗</span></button></div>
     </header>
     <main>
       <div class="page-ribbon"><span>FIELD KIT <b>01</b></span><span>GRANBLUE FANTASY: RELINK</span><span class="ribbon-version">WEB EDITION <i></i></span></div>
@@ -472,6 +498,7 @@ function render() {
       <footer class="page-footer"><span>INDEPENDENT COMMUNITY TOOL · SAVE FILES NEVER LEAVE YOUR BROWSER</span><span>DESIGNED FOR KEYBOARD, MOUSE & TOUCH</span></footer>
     </main>
     <input id="save-file-input" type="file" accept=".dat,application/octet-stream" hidden />`
+  localizeDOM(app, state.language)
   bindEvents()
   if (state.filter) applyFilter()
 }
@@ -493,6 +520,11 @@ function applyFilter() {
 
 function bindEvents() {
   const input = app.querySelector('#save-file-input')
+  app.querySelector('#language-select')?.addEventListener('change', (event) => {
+    state.language = normalizeLanguage(event.currentTarget.value)
+    saveLanguage(state.language)
+    render()
+  })
   input?.addEventListener('change', async () => {
     const file = input.files?.[0]
     if (file) await loadFile(file)
