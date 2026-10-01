@@ -26,8 +26,8 @@ const UI_TRANSLATIONS = {
   Dismiss: ['閉じる', '关闭', '關閉'],
   'INDEPENDENT COMMUNITY TOOL · SAVE FILES NEVER LEAVE YOUR BROWSER': ['コミュニティ制作ツール · セーブデータはブラウザーの外に送信されません', '独立社区工具 · 存档不会离开浏览器', '獨立社群工具 · 存檔不會離開瀏覽器'],
   'DESIGNED FOR KEYBOARD, MOUSE & TOUCH': ['キーボード・マウス・タッチ操作に対応', '支持键盘、鼠标和触控操作', '支援鍵盤、滑鼠與觸控操作'],
-  'Edit overmasteries. Add to your bag.': ['オーバーマスタリーを編集し、所持品を追加。', '编辑角色强化属性，添加背包物品。', '編輯角色強化屬性，新增背包物品。'],
-  'Read a Relink save, adjust overmastery stats, duplicate Sigils or Wrightstones into your bag, or choose them by name from the item catalog. Then download a verified copy.': ['Relinkのセーブデータを読み込み、オーバーマスタリーの能力を調整したり、ジーンやウェールライトストーンを所持品に複製したり、カタログから選んで追加できます。検証済みのコピーをダウンロードしてください。', '读取 Relink 存档，调整角色强化属性，将因子或辉石复制到背包，或从物品目录按名称添加。完成后下载经过验证的副本。', '讀取 Relink 存檔，調整角色強化屬性，將因子或輝石複製到背包，或從物品目錄依名稱新增。完成後下載經過驗證的副本。'],
+  'Edit overmasteries. Manage your bag.': ['オーバーマスタリーを編集し、所持品を整理。', '编辑角色强化属性，管理背包物品。', '編輯角色強化屬性，管理背包物品。'],
+  'Read a Relink save, adjust overmastery stats, add Sigils and Wrightstones, remove unassigned Sigils or inactive Wrightstones, or choose items by name from the catalog. Then download a verified copy.': ['Relinkのセーブデータを読み込み、オーバーマスタリーを調整したり、ジーンやウェールライトストーンを追加したり、未割り当てのジーンや無効状態のウェールライトストーンを削除したりできます。検証済みのコピーをダウンロードしてください。', '读取 Relink 存档，调整角色强化属性，添加因子与辉石，删除未分配的因子或未激活的辉石，也可从目录按名称选择物品。然后下载经过验证的副本。', '讀取 Relink 存檔，調整角色強化屬性，新增因子與輝石，刪除未指派的因子或未啟用的輝石，也可從目錄依名稱選擇物品。然後下載經過驗證的副本。'],
   'Files stay on this device': ['ファイルはこの端末内に保存されます', '文件保留在此设备上', '檔案會保留在此裝置上'],
   'Original save stays untouched': ['元のセーブデータは変更されません', '原始存档不会被修改', '原始存檔不會被修改'],
   'Sigils and Wrightstones': ['ジーンとウェールライトストーン', '因子与辉石', '因子與輝石'],
@@ -68,10 +68,22 @@ const UI_TRANSLATIONS = {
   'Add Wrightstone': ['ウェールライトストーンを追加', '添加辉石', '新增輝石'],
   'BAG INVENTORY': ['所持品', '背包物品', '背包物品'],
   'Add Sigils and Wrightstones.': ['ジーンとウェールライトストーンを追加。', '添加因子与辉石。', '新增因子與輝石。'],
-  'Copy an owned item or choose one by name from the catalog. Hashes are filled in for you. Export verifies the new records and checksum before download.': ['所持品のアイテムを複製するか、カタログから名前で選択してください。ハッシュは自動入力されます。ダウンロード前に追加レコードとチェックサムを検証します。', '复制已有物品，或从目录按名称选择。哈希会自动填入。导出前会验证新增记录和校验和。', '複製已有物品，或從目錄依名稱選擇。雜湊值會自動填入。匯出前會驗證新增紀錄與檢查碼。'],
+  'Edit Sigils and Wrightstones.': ['ジーンとウェールライトストーンを編集。', '编辑因子与辉石。', '編輯因子與輝石。'],
+  'Copy an entry, remove an unassigned Sigil or inactive Wrightstone, or choose one by name from the catalog. Hashes are filled in for you. Export verifies the changed records and checksum before download.': ['所持品を複製するか、未割り当てのジーンまたは無効状態のウェールライトストーンを削除するか、カタログから選択できます。ハッシュは自動入力され、ダウンロード前に変更レコードとチェックサムを検証します。', '复制已有物品、移除未分配的因子或未激活的辉石，或从目录按名称选择。哈希会自动填入，导出前会验证更改的记录和校验和。', '複製已有物品、移除未指派的因子或未啟用的輝石，或從目錄依名稱選擇。雜湊值會自動填入，下載前會驗證變更紀錄與檢查碼。'],
+  'Copy an owned entry, delete unassigned Sigils or inactive Wrightstones, or choose one by name from the catalog. New copies go into an empty slot and are left unassigned.': ['所持品を複製するか、未割り当てのジーンまたは無効状態のウェールライトストーンを削除するか、カタログから選択できます。複製は空きスロットに入り、割り当てられません。', '复制已有物品、删除未分配的因子或未激活的辉石，或从目录按名称选择。副本会放入空槽位且不分配给角色。', '複製已有物品、刪除未指派的因子或未啟用的輝石，或從目錄依名稱選擇。副本會放入空欄位且不會指派給角色。'],
   'PENDING CHANGES': ['保留中の変更', '待处理更改', '待處理變更'],
+  'This item cannot be safely removed.': ['このアイテムは安全に削除できません。', '无法安全移除此物品。', '無法安全移除此物品。'],
   'Remove queued item': ['追加予定のアイテムを削除', '移除待添加物品', '移除待新增物品'],
   'No bag additions queued.': ['追加するアイテムはありません。', '没有待添加的物品。', '沒有待新增的物品。'],
+  'No bag changes queued.': ['所持品の変更はありません。', '没有待处理的背包更改。', '沒有待處理的背包變更。'],
+  'Remove from bag': ['所持品から削除', '从背包移除', '從背包移除'],
+  'Delete': ['削除', '删除', '刪除'],
+  Undo: ['元に戻す', '撤销', '復原'],
+  'Undo item removal': ['アイテム削除を元に戻す', '撤销移除物品', '復原物品移除'],
+  'Only unassigned Sigils can be deleted.': ['未割り当てのジーンのみ削除できます。', '只能删除未分配的因子。', '只能刪除未指派的因子。'],
+  'Only inactive Wrightstones can be deleted.': ['無効状態のウェールライトストーンのみ削除できます。', '只能删除未激活的辉石。', '只能刪除未啟用的輝石。'],
+  'queued for removal': ['削除予定', '待移除', '待移除'],
+  'active in source': ['元データで有効', '源数据中已激活', '來源資料中已啟用'],
   'fixed secondary': ['固定の第2特性', '固定副词条', '固定副詞條'],
   'selectable secondary': ['選択可能な第2特性', '可选副词条', '可選副詞條'],
   'Uncatalogued trait': ['カタログにない特性', '未收录词条', '未收錄詞條'],
@@ -131,6 +143,7 @@ const UI_TRANSLATIONS = {
   'Export creates a new file. Keep your original save as a backup until the game loads the edited copy.': ['エクスポートすると新しいファイルが作成されます。ゲームで編集済みファイルを読み込めるまで、元のセーブデータをバックアップとして保管してください。', '导出会创建新文件。确认游戏能读取编辑后的存档前，请保留原始存档备份。', '匯出會建立新檔案。確認遊戲能讀取編輯後的存檔前，請保留原始存檔備份。'],
   'Slot counter or serial records are ambiguous.': ['スロット数またはシリアル番号の記録が不明確です。', '槽位计数器或序列号记录不明确。', '欄位計數器或序號紀錄不明確。'],
   'This item type is read-only for this save.': ['このセーブデータでは、この種類のアイテムは読み取り専用です。', '此存档中的该物品类型为只读。', '此存檔中的此物品類型為唯讀。'],
+  'Adding copies is disabled for this item type in this save.': ['このセーブデータでは、この種類のアイテムを複製できません。', '此存档中无法复制此类物品。', '此存檔中無法複製此類物品。'],
   'Attribute field is missing, duplicated, or not scalar.': ['能力フィールドが見つからないか、重複しているか、単一の値ではありません。', '属性字段缺失、重复或不是单值。', '屬性欄位缺漏、重複或不是單一值。'],
   'Level field is missing, duplicated, or not scalar.': ['レベルフィールドが見つからないか、重複しているか、単一の値ではありません。', '等级字段缺失、重复或不是单值。', '等級欄位缺漏、重複或不是單一值。'],
   'Community raw override 0x03FF; behavior can vary by game version.': ['コミュニティ独自の生値設定 0x03FF。動作はゲームバージョンによって異なる場合があります。', '社区原始值覆盖 0x03FF；效果可能因游戏版本而异。', '社群原始值覆寫 0x03FF；效果可能因遊戲版本而異。'],
@@ -300,7 +313,7 @@ function translateDynamicText(text, language) {
   if (match) return [`Lv ${match[1]}`, `等级 ${match[1]}`, `等級 ${match[1]}`][index]
   match = text.match(/^T(\d+) (.+) · Lv (\d+)$/)
   if (match) return [`特性${match[1]} ${localizeInventoryTerm(match[2], 'trait', language)} · Lv ${match[3]}`, `词条${match[1]} ${localizeInventoryTerm(match[2], 'trait', language)} · Lv ${match[3]}`, `詞條${match[1]} ${localizeInventoryTerm(match[2], 'trait', language)} · Lv ${match[3]}`][index]
-  match = text.match(/^(Sigil Lv \d+|Serial \d+) · Unit (\d+) · (assigned in source|bag item)$/)
+  match = text.match(/^(Sigil Lv \d+|Serial \d+) · Unit (\d+) · (assigned in source|bag item|queued for removal|active in source)$/)
   if (match) {
     const title = translateDynamicText(match[1], language)
     const owner = UI_TRANSLATIONS[match[3]]?.[index] ?? match[3]
@@ -375,11 +388,15 @@ function translateDynamicText(text, language) {
   if (match) return [`${match[1]} の読み戻し検証に失敗しました。`, `${match[1]} 的回读验证失败。`, `${match[1]} 的讀回驗證失敗。`][index]
   match = text.match(/^Slot (\d+) for (.+) is incomplete\.$/)
   if (match) return [`${match[2]} のスロット ${match[1]} は不完全です。`, `${match[2]} 的槽位 ${match[1]} 不完整。`, `${match[2]} 的欄位 ${match[1]} 不完整。`][index]
-  match = text.match(/^Downloaded (.+); checksum, (\d+) overmastery edits, and (\d+) bag additions verified\.$/)
+  match = text.match(/^· (\d+) bag changes?$/)
+  if (match) return [`· 所持品の変更 ${match[1]} 件`, `· 背包更改 ${match[1]} 项`, `· 背包變更 ${match[1]} 項`][index]
+  match = text.match(/^(\d+) changes? queued$/)
+  if (match) return [`${match[1]} 件の変更を保留中`, `已排队 ${match[1]} 项更改`, `已排隊 ${match[1]} 項變更`][index]
+  match = text.match(/^Downloaded (.+); checksum, (\d+) overmastery edits, (\d+) bag additions, and (\d+) bag removals verified\.$/)
   if (match) return [
-    `${match[1]} をダウンロードしました。チェックサム、オーバーマスタリーの変更 ${match[2]} 件、所持品の追加 ${match[3]} 件を検証しました。`,
-    `已下载 ${match[1]}。校验和、角色强化更改 ${match[2]} 项及背包新增 ${match[3]} 项均已验证。`,
-    `已下載 ${match[1]}。檢查碼、角色強化變更 ${match[2]} 項及背包新增 ${match[3]} 項均已驗證。`,
+    `${match[1]} をダウンロードしました。チェックサム、オーバーマスタリーの変更 ${match[2]} 件、所持品の追加 ${match[3]} 件、削除 ${match[4]} 件を検証しました。`,
+    `已下载 ${match[1]}。校验和、角色强化更改 ${match[2]} 项、背包新增 ${match[3]} 项及移除 ${match[4]} 项均已验证。`,
+    `已下載 ${match[1]}。檢查碼、角色強化變更 ${match[2]} 項、背包新增 ${match[3]} 項及移除 ${match[4]} 項均已驗證。`,
   ][index]
   match = text.match(/^The (sigil|wrightstone) slot counter or serial records are ambiguous, so this save cannot be edited safely\.$/)
   if (match) return [`${match[1] === 'sigil' ? 'ジーン' : 'ウェールライトストーン'}のスロット数またはシリアル記録が不明確なため、このセーブは安全に編集できません。`, `由于${match[1] === 'sigil' ? '因子' : '辉石'}槽位计数器或序列号记录不明确，无法安全编辑此存档。`, `由於${match[1] === 'sigil' ? '因子' : '輝石'}欄位計數器或序號紀錄不明確，無法安全編輯此存檔。`][index]

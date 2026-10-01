@@ -1,6 +1,6 @@
 # Relink Save Workshop
 
-A browser-based, save-file-only editor for Granblue Fantasy: Relink. It edits overmasteries and adds Sigils and Wrightstones to the bag. It does not connect to the game or modify game memory. The app reads and edits the selected save locally, then downloads an edited copy.
+A browser-based, save-file-only editor for Granblue Fantasy: Relink. It edits overmasteries and adds or removes Sigils and Wrightstones in the bag. It does not connect to the game or modify game memory. The app reads and edits the selected save locally, then downloads an edited copy.
 
 ## Run locally
 
@@ -21,14 +21,14 @@ Use the language selector in the header to switch between English, Japanese, Sim
 ## Use
 
 1. Choose or drop a readable `.dat` save file.
-2. Use **Overmastery** to edit any character’s four overmastery slots, or **Bag items** to add Sigils and Wrightstones.
-3. In **Bag items**, copy an existing entry or open **Create from item catalog** to choose a named Sigil or Wrightstone, its traits, and how many copies to add. For selectable `+` Sigils, the second-trait list includes every cataloged trait, allowing combinations made through Sigil Synthesis even when they are outside the natural drop pool. Fixed-secondary Sigils keep their fixed trait. The editor fills in save hashes automatically and keeps your catalog selections when you queue additions. Copies are unassigned and use existing empty save slots. Trait combinations are not checked for in-game legality, and the catalog may not cover every game item.
+2. Use **Overmastery** to edit any character’s four overmastery slots, or **Bag items** to add or remove Sigils and Wrightstones.
+3. In **Bag items**, copy an existing entry, delete an unassigned Sigil or inactive Wrightstone, or open **Create from item catalog** to choose a named item, its traits, and how many copies to add. For selectable `+` Sigils, the second-trait list includes every cataloged trait, allowing combinations made through Sigil Synthesis even when they are outside the natural drop pool. Fixed-secondary Sigils keep their fixed trait. The editor fills in save hashes automatically and keeps your catalog selections when you queue additions or removals. Copies are unassigned and use existing empty save slots. Trait combinations are not checked for in-game legality, and the catalog may not cover every game item.
 4. Choose **Download edited save**. The browser checks the save checksum and reads back changed overmastery and inventory fields before exporting a new `*-edited.dat` file.
 5. Keep the original save as a backup and make sure the game is closed before replacing a save manually.
 
 The editor preserves unknown overmastery hashes and invalid existing values when their slots are untouched. Character records whose identity is not in the supported playable-character map, as well as incomplete or ambiguous attribute/level pairs, are read-only. A checksum mismatch disables exporting.
 
-Sigil and Wrightstone inventory records with incomplete or ambiguous fields cannot be selected as copy sources or empty targets. Adding an item reuses an existing empty item slot; this editor does not insert new FlatBuffers records or alter equipment currently attached to a weapon. New Sigils use an empty owner field and flags `2`; new Wrightstones use inactive `2104` and flags `2`. The tool derives a new serial from the save’s existing serials and advances the global counter when that counter is present.
+Sigil and Wrightstone inventory records with incomplete or ambiguous fields cannot be selected as copy sources or empty targets. Adding an item reuses an existing empty item slot, and deleting one clears its item and trait fields while preserving its serial record. Assigned Sigils and active Wrightstones cannot be deleted. This editor does not insert new FlatBuffers records or alter equipment currently attached to a weapon. New Sigils use an empty owner field and flags `2`; new Wrightstones use inactive `2104` and flags `2`. The tool derives a new serial from the save’s existing serials and advances the global counter when that counter is present.
 
 ## Version and value notes
 

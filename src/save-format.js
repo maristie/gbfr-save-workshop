@@ -598,16 +598,55 @@ function validateQueuedAddition(addition, kind) {
   return { kind, hash: hash >>> 0, level, lanes }
 }
 
-function planInventoryAdditions(parsed, additions) {
+function planInventoryChanges(parsed, additions, removals) {
   const patches = []
   const expected = []
+  const cleared = []
   if (!Array.isArray(additions)) fail('Bag additions are malformed.')
+  if (!Array.isArray(removals)) fail('Bag removals are malformed.')
   if (additions.some((addition) => !['sigil', 'wrightstone'].includes(addition?.kind))) fail('A bag addition has an unknown item type.')
+  if (removals.some((removal) => !['sigil', 'wrightstone'].includes(removal?.kind))) fail('A bag removal has an unknown item type.')
+  const removalKeys = new Set()
+  for (const removal of removals) {
+    if (!Number.isInteger(removal.unitId) || removal.unitId < 0) fail('A bag removal has an invalid slot ID.')
+    const key = `${removal.kind}:${removal.unitId}`
+    if (removalKeys.has(key)) fail('A bag item was queued for removal more than once.')
+    removalKeys.add(key)
+  }
   for (const kind of ['sigil', 'wrightstone']) {
     const list = additions.filter((addition) => addition.kind === kind).map((addition) => validateQueuedAddition(addition, kind))
-    if (!list.length) continue
     const bucket = parsed.inventory[kind === 'sigil' ? 'sigils' : 'wrightstones']
-    const eligible = bucket.rows.filter((row) => row.empty && row.editable)
+    const kindRemovals = removals.filter((removal) => removal.kind === kind)
+    const removedRows = kindRemovals.map((removal) => {
+      const row = bucket.rows.find((entry) => entry.unitId === removal.unitId)
+      const canDelete = kind === 'sigil'
+        ? row?.ownerHash === 0 || row?.ownerHash === EMPTY_HASH
+        : row?.active === 0
+      if (!row || row.empty || !row.editable || !canDelete) fail('This item cannot be safely removed.')
+      return row
+    })
+    const put = (offset, value, type = 'uint32', label = `${kind} slot`) => {
+      if (offset === null || offset === undefined) fail(`${label} is incomplete.`)
+      patches.push({ offset, value, type })
+    }
+    for (const row of removedRows) {
+      put(row.offsets.hash, EMPTY_HASH, 'uint32', `${kind} slot ${row.unitId}`)
+      if (kind === 'sigil') {
+        put(row.offsets.level, 0, 'int32', `${kind} slot ${row.unitId}`)
+        put(row.offsets.owner, EMPTY_HASH, 'uint32', `${kind} slot ${row.unitId}`)
+      } else {
+        put(row.offsets.active, 0, 'uint8', `${kind} slot ${row.unitId}`)
+      }
+      put(row.offsets.flags, 0, 'uint32', `${kind} slot ${row.unitId}`)
+      row.lanes.forEach((lane, laneIndex) => {
+        put(lane.hashOffset, EMPTY_HASH, 'uint32', `${kind} slot ${row.unitId}, trait ${laneIndex + 1}`)
+        put(lane.levelOffset, 0, 'int32', `${kind} slot ${row.unitId}, trait ${laneIndex + 1}`)
+      })
+      cleared.push({ kind, unitId: row.unitId, serial: row.serial })
+    }
+
+    if (!list.length) continue
+    const eligible = bucket.rows.filter((row) => (row.empty || removalKeys.has(`${kind}:${row.unitId}`)) && row.editable)
     if (list.length > eligible.length) fail(`Not enough empty ${kind === 'sigil' ? 'sigil' : 'Wrightstone'} slots: need ${list.length}, have ${eligible.length}.`)
     if (bucket.maxCount.ambiguous) fail(`The ${kind} slot counter has duplicate or incomplete records; this save cannot be edited safely.`)
     if (bucket.serialAmbiguous) fail(`The ${kind} slot serials have duplicate or incomplete records; this save cannot be edited safely.`)
@@ -621,32 +660,29 @@ function planInventoryAdditions(parsed, additions) {
     list.forEach((item, index) => {
       const target = eligible[index]
       const serial = firstSerial + index
-      const put = (offset, value, type = 'uint32') => {
-        if (offset === null || offset === undefined) fail(`${kind} slot ${target.unitId} is incomplete.`)
-        patches.push({ offset, value, type })
-      }
-      put(target.offsets.hash, item.hash)
-      put(target.offsets.serial, serial)
+      put(target.offsets.hash, item.hash, 'uint32', `${kind} slot ${target.unitId}`)
+      put(target.offsets.serial, serial, 'uint32', `${kind} slot ${target.unitId}`)
       if (kind === 'sigil') {
-        put(target.offsets.level, item.level, 'int32')
-        put(target.offsets.owner, EMPTY_HASH)
-        put(target.offsets.flags, 2)
+        put(target.offsets.level, item.level, 'int32', `${kind} slot ${target.unitId}`)
+        put(target.offsets.owner, EMPTY_HASH, 'uint32', `${kind} slot ${target.unitId}`)
+        put(target.offsets.flags, 2, 'uint32', `${kind} slot ${target.unitId}`)
       } else {
-        put(target.offsets.active, 0, 'uint8')
-        put(target.offsets.flags, 2)
+        put(target.offsets.active, 0, 'uint8', `${kind} slot ${target.unitId}`)
+        put(target.offsets.flags, 2, 'uint32', `${kind} slot ${target.unitId}`)
       }
       item.lanes.forEach((lane, laneIndex) => {
         const targetLane = target.lanes[laneIndex]
-        put(targetLane.hashOffset, lane.hash)
-        put(targetLane.levelOffset, lane.level, 'int32')
+        put(targetLane.hashOffset, lane.hash, 'uint32', `${kind} slot ${target.unitId}, trait ${laneIndex + 1}`)
+        put(targetLane.levelOffset, lane.level, 'int32', `${kind} slot ${target.unitId}, trait ${laneIndex + 1}`)
       })
       expected.push({ kind, unitId: target.unitId, serial, ...item, ownerHash: kind === 'sigil' ? EMPTY_HASH : undefined, flags: 2, active: kind === 'wrightstone' ? 0 : undefined })
     })
   }
-  return { patches, expected }
+  const overwrittenSlots = new Set(expected.map((item) => `${item.kind}:${item.unitId}`))
+  return { patches, expected, cleared: cleared.filter((item) => !overwrittenSlots.has(`${item.kind}:${item.unitId}`)) }
 }
 
-function verifyInventoryPlan(inventory, expected) {
+function verifyInventoryPlan(inventory, expected, cleared) {
   for (const item of expected) {
     const rows = inventory[item.kind === 'sigil' ? 'sigils' : 'wrightstones'].rows
     const row = rows.find((entry) => entry.unitId === item.unitId)
@@ -661,12 +697,28 @@ function verifyInventoryPlan(inventory, expected) {
       }
     }
   }
+  for (const item of cleared) {
+    const rows = inventory[item.kind === 'sigil' ? 'sigils' : 'wrightstones'].rows
+    const row = rows.find((entry) => entry.unitId === item.unitId)
+    if (!row || !row.empty || row.serial !== item.serial || row.flags !== 0) {
+      fail(`Read-back verification failed for removal of ${item.kind} slot ${item.unitId}.`)
+    }
+    if (item.kind === 'sigil' && (row.level !== 0 || row.ownerHash !== EMPTY_HASH)) {
+      fail(`Read-back verification failed for removal of sigil slot ${item.unitId}.`)
+    }
+    if (item.kind === 'wrightstone' && row.active !== 0) {
+      fail(`Read-back verification failed for removal of Wrightstone slot ${item.unitId}.`)
+    }
+    if (row.lanes.some((lane) => lane.hash !== EMPTY_HASH || lane.level !== 0)) {
+      fail(`Read-back verification failed for cleared traits in ${item.kind} slot ${item.unitId}.`)
+    }
+  }
 }
 
-export function createEditedSave(bytes, parsed, changes, inventoryAdds = []) {
+export function createEditedSave(bytes, parsed, changes, inventoryAdds = [], inventoryRemovals = []) {
   if (!parsed.checksumValid) fail('The input save checksum is invalid; editing is disabled for safety.')
-  if (!changes.length && !inventoryAdds.length) fail('There are no changes to download.')
-  const inventoryPlan = planInventoryAdditions(parsed, inventoryAdds)
+  if (!changes.length && !inventoryAdds.length && !inventoryRemovals.length) fail('There are no changes to download.')
+  const inventoryPlan = planInventoryChanges(parsed, inventoryAdds, inventoryRemovals)
   const output = new Uint8Array(bytes)
   const view = new DataView(output.buffer, output.byteOffset, output.byteLength)
 
@@ -694,7 +746,7 @@ export function createEditedSave(bytes, parsed, changes, inventoryAdds = []) {
       fail(`Read-back verification failed for ${change.character.name}, slot ${change.slot.index + 1}.`)
     }
   }
-  verifyInventoryPlan(reparsed.inventory, inventoryPlan.expected)
+  verifyInventoryPlan(reparsed.inventory, inventoryPlan.expected, inventoryPlan.cleared)
   return output
 }
 

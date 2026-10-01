@@ -37,6 +37,7 @@ const state = {
   filter: '',
   activeTab: 'overmastery',
   inventoryAdds: [],
+  inventoryRemovals: [],
   inventoryFilter: { sigil: '', wrightstone: '' },
   catalogDrafts: { sigil: null, wrightstone: null },
   nextDraftId: 1,
@@ -188,8 +189,8 @@ function renderUpload() {
   return `<section class="welcome-grid">
     <div class="welcome-copy">
       <p class="eyebrow"><span class="pulse-dot"></span> SAVE FILE EDITOR <span class="eyebrow-divider">/</span> SAVE WORKSHOP</p>
-      <h1>Edit overmasteries. Add to your bag.</h1>
-      <p class="welcome-text">Read a Relink save, adjust overmastery stats, duplicate Sigils or Wrightstones into your bag, or choose them by name from the item catalog. Then download a verified copy.</p>
+      <h1>Edit overmasteries. Manage your bag.</h1>
+      <p class="welcome-text">Read a Relink save, adjust overmastery stats, add Sigils and Wrightstones, remove unassigned Sigils or inactive Wrightstones, or choose items by name from the catalog. Then download a verified copy.</p>
       <div class="trust-points">
         <span><i>01</i> Files stay on this device</span>
         <span><i>02</i> Original save stays untouched</span>
@@ -210,6 +211,28 @@ function renderUpload() {
 
 function queuedFor(kind) {
   return state.inventoryAdds.filter((addition) => addition.kind === kind).length
+}
+
+function queuedRemovalsFor(kind) {
+  return state.inventoryRemovals.filter((removal) => removal.kind === kind).length
+}
+
+function inventorySlotsAfterQueue(kind) {
+  return inventoryBucket(kind).available + queuedRemovalsFor(kind) - queuedFor(kind)
+}
+
+function isRemovalQueued(kind, unitId) {
+  return state.inventoryRemovals.some((removal) => removal.kind === kind && removal.unitId === unitId)
+}
+
+function canDeleteInventoryRow(kind, row) {
+  if (!row?.editable || row.empty) return false
+  if (kind === 'sigil') return row.ownerHash === 0 || row.ownerHash === 0x887ae0b0
+  return row.active === 0
+}
+
+function inventoryChangeCount() {
+  return state.inventoryAdds.length + state.inventoryRemovals.length
 }
 
 function inventoryBucket(kind) {
@@ -234,7 +257,7 @@ function renderInventoryCategory(kind) {
   const active = bucket.rows.filter((row) => !row.empty)
   const matched = search ? active.filter((row) => inventoryRowSearchText(kind, row).includes(search)) : active
   const shown = matched.slice(0, 100)
-  const freeAfterQueue = bucket.available - queuedFor(kind)
+  const freeAfterQueue = Math.max(0, inventorySlotsAfterQueue(kind))
   const rows = shown.map((row) => {
     const traitSummary = row.lanes.map((lane, index) => {
       const empty = lane.hash === 0 || lane.hash === 0x887ae0b0
@@ -242,15 +265,26 @@ function renderInventoryCategory(kind) {
     }).filter(Boolean).join('  /  ')
     const subtitle = kind === 'sigil' ? `Sigil Lv ${row.level}` : `Serial ${row.serial}`
     const queueAllowed = state.parsed.checksumValid && row.cloneable && freeAfterQueue > 0 && !bucket.maxCount.ambiguous && !bucket.serialAmbiguous
+    const removalQueued = isRemovalQueued(kind, row.unitId)
+    const removable = canDeleteInventoryRow(kind, row)
+    const ownerLabel = removalQueued
+      ? 'queued for removal'
+      : kind === 'sigil'
+        ? (!row.ownerHash || row.ownerHash === 0x887ae0b0 ? 'bag item' : 'assigned in source')
+        : (row.active === 0 ? 'bag item' : 'active in source')
+    const removeTitle = kind === 'sigil' ? 'Only unassigned Sigils can be deleted.' : 'Only inactive Wrightstones can be deleted.'
     const searchText = escapeHTML(inventoryRowSearchText(kind, row))
     return `<article class="inventory-row" data-inventory-row data-search="${searchText}">
-      <div class="inventory-item-copy"><strong>${escapeHTML(itemLabel(kind, row.hash))}</strong><small>${subtitle} · Unit ${row.unitId} · ${row.ownerHash && row.ownerHash !== 0x887ae0b0 ? 'assigned in source' : 'bag item'}</small><span>${escapeHTML(traitSummary || 'No trait values recognized')}</span></div>
-      <button class="subtle-button inventory-add-button" data-action="queue-copy" data-kind="${kind}" data-unit-id="${row.unitId}" type="button" ${queueAllowed ? '' : 'disabled'}>Add copy</button>
+      <div class="inventory-item-copy"><strong>${escapeHTML(itemLabel(kind, row.hash))}</strong><small>${subtitle} · Unit ${row.unitId} · ${ownerLabel}</small><span>${escapeHTML(traitSummary || 'No trait values recognized')}</span></div>
+      <div class="inventory-row-actions">
+        <button class="subtle-button inventory-add-button" data-action="queue-copy" data-kind="${kind}" data-unit-id="${row.unitId}" type="button" ${queueAllowed ? '' : 'disabled'}>Add copy</button>
+        <button class="subtle-button inventory-remove-button" data-action="${removalQueued ? 'restore-removal' : 'queue-removal'}" data-kind="${kind}" data-unit-id="${row.unitId}" type="button" ${removalQueued || (state.parsed.checksumValid && removable) ? '' : 'disabled'}${!removalQueued && !removable ? ` title="${escapeHTML(localizeText(removeTitle, state.language))}"` : ''}>${removalQueued ? 'Undo' : 'Delete'}</button>
+      </div>
     </article>`
   }).join('')
-  const capText = `${bucket.occupied.toLocaleString()} in bag · ${Math.max(0, freeAfterQueue).toLocaleString()} empty slots`
+  const capText = `${(bucket.occupied - queuedRemovalsFor(kind)).toLocaleString()} in bag · ${freeAfterQueue.toLocaleString()} empty slots`
   const counterWarning = bucket.maxCount.ambiguous || bucket.serialAmbiguous
-    ? `<div class="alert alert-warning"><strong>Slot counter or serial records are ambiguous.</strong> This item type is read-only for this save.</div>`
+    ? `<div class="alert alert-warning"><strong>Slot counter or serial records are ambiguous.</strong> Adding copies is disabled for this item type in this save.</div>`
     : ''
   const emptyMarkup = matched.length === 0 ? '<p class="inventory-empty">No matching bag entries.</p>' : ''
   const moreMarkup = matched.length > shown.length
@@ -261,7 +295,7 @@ function renderInventoryCategory(kind) {
     : 'Select named items and traits. Their save hashes are filled in automatically. Trait combinations are not checked for in-game legality.'
   return `<section class="inventory-card">
     <div class="inventory-card-heading"><div><p class="eyebrow">${label.toUpperCase()}</p><h3>${title}</h3></div><span class="inventory-capacity">${capText}</span></div>
-    <p class="inventory-help">Choose an owned entry to add a matching copy. New copies go into an existing empty slot and are left unassigned.</p>
+    <p class="inventory-help">Copy an owned entry, delete unassigned Sigils or inactive Wrightstones, or choose one by name from the catalog. New copies go into an empty slot and are left unassigned.</p>
     ${counterWarning}
     <label class="search-box inventory-search"><span>⌕</span><input data-role="inventory-search" data-kind="${kind}" type="search" placeholder="Search item names, traits, or slot ID" value="${escapeHTML(state.inventoryFilter[kind])}" autocomplete="off" /></label>
     <div class="inventory-list">${rows || emptyMarkup}${moreMarkup}</div>
@@ -282,7 +316,7 @@ function renderCatalogForm(kind) {
   const primaryTrait = item ? primaryTraitFor(item) : null
   if (item && !primaryTrait) return '<p class="inventory-empty">The item catalog is unavailable.</p>'
   const bucket = inventoryBucket(kind)
-  const remaining = Math.max(0, bucket.available - queuedFor(kind))
+  const remaining = Math.max(0, inventorySlotsAfterQueue(kind))
   const disabled = !state.parsed.checksumValid || remaining <= 0 || bucket.maxCount.ambiguous || bucket.serialAmbiguous
   const quantity = Math.max(1, Number.parseInt(draft.quantity, 10) || 1)
   const itemOptions = `<option value="" disabled${item ? '' : ' selected'}>Choose a ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'}</option>${items.map((entry) => `<option value="${escapeHTML(entry.id)}"${entry.id === itemId ? ' selected' : ''}>${escapeHTML(itemLabel(kind, entry.hash))}</option>`).join('')}`
@@ -392,15 +426,24 @@ function updateTraitLevelLimit(select) {
 
 function renderInventoryPanel() {
   const queued = state.inventoryAdds
-  const queuedMarkup = queued.length ? queued.map((addition) => `<div class="queue-item">
+  const removals = state.inventoryRemovals
+  const queuedMarkup = queued.length || removals.length ? `${queued.map((addition) => `<div class="queue-item">
     <span><strong>${escapeHTML(itemLabel(addition.kind, addition.hash))}</strong></span>
     <small>${addition.kind === 'sigil' ? `Lv ${addition.level}` : `${addition.lanes.filter((lane) => lane.hash !== 0x887ae0b0 && lane.hash !== 0).length} traits`}${addition.sourceUnitId ? ` · copied from ${addition.sourceUnitId}` : ' · catalog selection'}</small>
     <button class="queue-remove" data-action="remove-queued" data-draft-id="${addition.draftId}" type="button" aria-label="Remove queued item">×</button>
-  </div>`).join('') : '<p class="queue-empty">No bag additions queued.</p>'
+  </div>`).join('')}${removals.map((removal) => {
+    const row = inventoryBucket(removal.kind).rows.find((entry) => entry.unitId === removal.unitId)
+    return `<div class="queue-item is-removal">
+      <span><strong>${escapeHTML(localizeText('Remove from bag', state.language))}: ${escapeHTML(itemLabel(removal.kind, row?.hash ?? 0))}</strong></span>
+      <small>${escapeHTML(localizeText(removal.kind === 'sigil' ? 'Sigil' : 'Wrightstone', state.language))} · Unit ${removal.unitId}</small>
+      <button class="queue-remove" data-action="restore-removal" data-kind="${removal.kind}" data-unit-id="${removal.unitId}" type="button" aria-label="Undo item removal">×</button>
+    </div>`
+  }).join('')}` : '<p class="queue-empty">No bag changes queued.</p>'
+  const pendingCount = inventoryChangeCount()
   return `<section class="inventory-workspace">
-    <div class="inventory-intro"><div><p class="eyebrow">BAG INVENTORY</p><h2>Add Sigils and Wrightstones.</h2></div><p>Copy an owned item or choose one by name from the catalog. Hashes are filled in for you. Export verifies the new records and checksum before download.</p></div>
+    <div class="inventory-intro"><div><p class="eyebrow">BAG INVENTORY</p><h2>Edit Sigils and Wrightstones.</h2></div><p>Copy an entry, remove an unassigned Sigil or inactive Wrightstone, or choose one by name from the catalog. Hashes are filled in for you. Export verifies the changed records and checksum before download.</p></div>
     <div class="inventory-grid">${renderInventoryCategory('sigil')}${renderInventoryCategory('wrightstone')}</div>
-    <section class="queue-panel"><div><p class="eyebrow">PENDING CHANGES</p><h3>${queued.length} item${queued.length === 1 ? '' : 's'} queued</h3></div><div class="queue-list">${queuedMarkup}</div></section>
+    <section class="queue-panel"><div><p class="eyebrow">PENDING CHANGES</p><h3>${pendingCount} change${pendingCount === 1 ? '' : 's'} queued</h3></div><div class="queue-list">${queuedMarkup}</div></section>
   </section>`
 }
 
@@ -409,7 +452,7 @@ function renderLoaded() {
   const changes = (() => { try { return currentChanges() } catch { return [] } })()
   const character = selectedCharacter()
   const checksumValid = state.parsed.checksumValid
-  const queued = state.inventoryAdds.length
+  const queued = inventoryChangeCount()
   const hasPending = changes.length > 0 || queued > 0
   const canDownload = hasPending && checksumValid
   const slotsMarkup = character ? character.slots.map((slot) => {
@@ -475,7 +518,7 @@ function renderLoaded() {
       </section>
     </div>`}
     <div class="edit-footer workspace-footer">
-      <div class="edit-feedback" aria-live="polite">${state.notice ? `<span class="feedback-check">✓</span>${escapeHTML(state.notice)}` : `<span class="feedback-dot"></span>${changes.length ? `${changes.length} overmastery slot${changes.length === 1 ? '' : 's'}` : 'No overmastery edits'}${queued ? ` · ${queued} bag addition${queued === 1 ? '' : 's'}` : ''}`}</div>
+      <div class="edit-feedback" aria-live="polite">${state.notice ? `<span class="feedback-check">✓</span>${escapeHTML(state.notice)}` : `<span class="feedback-dot"></span><span>${changes.length ? `${changes.length} overmastery slot${changes.length === 1 ? '' : 's'}` : 'No overmastery edits'}</span>${queued ? `<span>· ${queued} bag change${queued === 1 ? '' : 's'}</span>` : ''}`}</div>
       <div class="edit-actions"><button class="subtle-button" data-action="reset" type="button" ${hasPending ? '' : 'disabled'}>Reset edits</button><button class="primary-button download-button" data-action="download" type="button" ${canDownload ? '' : 'disabled'}>${downloadLabel}</button></div>
     </div>
     <div class="workspace-note"><span>⟲</span> Export creates a new file. Keep your original save as a backup until the game loads the edited copy.</div>
@@ -586,6 +629,8 @@ function bindEvents() {
       if (action === 'select-character') { state.selectedUnitId = Number(event.currentTarget.dataset.unitId); state.notice = ''; render() }
       if (action === 'switch-tab') { state.activeTab = event.currentTarget.dataset.tab; state.error = ''; render() }
       if (action === 'queue-copy') queueInventoryCopy(event.currentTarget.dataset.kind, Number(event.currentTarget.dataset.unitId))
+      if (action === 'queue-removal') queueInventoryRemoval(event.currentTarget.dataset.kind, Number(event.currentTarget.dataset.unitId))
+      if (action === 'restore-removal') restoreInventoryRemoval(event.currentTarget.dataset.kind, Number(event.currentTarget.dataset.unitId))
       if (action === 'remove-queued') removeQueuedAddition(Number(event.currentTarget.dataset.draftId))
       if (action === 'reset') resetEdits()
       if (action === 'clear-slot') clearSlot(Number(event.currentTarget.dataset.unitId), Number(event.currentTarget.dataset.slotIndex))
@@ -661,7 +706,7 @@ function queueInventoryCopy(kind, unitId) {
   const row = bucket.rows.find((entry) => entry.unitId === unitId)
   if (!row?.cloneable) return
   if (!state.parsed.checksumValid) return
-  if (bucket.available - queuedFor(kind) <= 0) {
+  if (inventorySlotsAfterQueue(kind) <= 0) {
     state.error = `There are no reusable empty ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'} slots left.`
     render()
     return
@@ -680,6 +725,23 @@ function queueInventoryCopy(kind, unitId) {
   render()
 }
 
+function queueInventoryRemoval(kind, unitId) {
+  const bucket = inventoryBucket(kind)
+  const row = bucket.rows.find((entry) => entry.unitId === unitId)
+  if (!state.parsed.checksumValid || !canDeleteInventoryRow(kind, row) || isRemovalQueued(kind, unitId)) return
+  state.inventoryRemovals.push({ kind, unitId })
+  state.error = ''
+  state.notice = ''
+  render()
+}
+
+function restoreInventoryRemoval(kind, unitId) {
+  state.inventoryRemovals = state.inventoryRemovals.filter((removal) => removal.kind !== kind || removal.unitId !== unitId)
+  state.error = ''
+  state.notice = ''
+  render()
+}
+
 function queueCatalogInventoryItem(event, form) {
   event.preventDefault()
   rememberCatalogForm(form)
@@ -691,7 +753,7 @@ function queueCatalogInventoryItem(event, form) {
     if (!item) throw new Error('Choose an item from the catalog.')
     const quantity = Number(data.get('quantity'))
     if (!Number.isInteger(quantity) || quantity < 1) throw new Error('Quantity must be a positive whole number.')
-    const remaining = inventoryBucket(kind).available - queuedFor(kind)
+    const remaining = inventorySlotsAfterQueue(kind)
     if (quantity > remaining) throw new Error(`Only ${Math.max(0, remaining)} empty ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'} slots remain.`)
     const primaryTrait = primaryTraitFor(item)
     if (!primaryTrait) throw new Error('The selected item has no recognized primary trait.')
@@ -748,6 +810,7 @@ function resetEdits() {
     }
   }
   state.inventoryAdds = []
+  state.inventoryRemovals = []
   state.error = ''
   state.notice = 'All edits reset.'
   render()
@@ -766,6 +829,7 @@ async function loadFile(file) {
     state.filter = ''
     state.activeTab = 'overmastery'
     state.inventoryAdds = []
+    state.inventoryRemovals = []
     state.catalogDrafts = { sigil: null, wrightstone: null }
     state.inventoryFilter = { sigil: '', wrightstone: '' }
     state.openRawKind = ''
@@ -777,6 +841,7 @@ async function loadFile(file) {
     state.parsed = null
     state.selectedUnitId = null
     state.inventoryAdds = []
+    state.inventoryRemovals = []
   }
   render()
 }
@@ -784,7 +849,7 @@ async function loadFile(file) {
 function downloadEditedSave() {
   try {
     const changes = currentChanges()
-    const output = createEditedSave(state.bytes, state.parsed, changes, state.inventoryAdds)
+    const output = createEditedSave(state.bytes, state.parsed, changes, state.inventoryAdds, state.inventoryRemovals)
     const blob = new Blob([output], { type: 'application/octet-stream' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -795,9 +860,10 @@ function downloadEditedSave() {
     link.click()
     link.remove()
     window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-    const inventoryCount = state.inventoryAdds.length
+    const additionCount = state.inventoryAdds.length
+    const removalCount = state.inventoryRemovals.length
     const overmasteryCount = changes.length
-    state.notice = `Downloaded ${link.download}; checksum, ${overmasteryCount} overmastery edits, and ${inventoryCount} bag additions verified.`
+    state.notice = `Downloaded ${link.download}; checksum, ${overmasteryCount} overmastery edits, ${additionCount} bag additions, and ${removalCount} bag removals verified.`
   } catch (error) {
     state.error = error instanceof Error ? error.message : String(error)
     state.notice = ''

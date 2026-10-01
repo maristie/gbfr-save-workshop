@@ -190,7 +190,11 @@ code { font: .68rem var(--mono); color:#adc6c7; }
 .inventory-item-copy strong { overflow:hidden; color:#cbd8db; font:500 .66rem var(--mono); text-overflow:ellipsis; white-space:nowrap; }
 .inventory-item-copy small { color:#768890; font:400 .52rem var(--mono); }
 .inventory-item-copy > span { overflow:hidden; color:#8ea9a6; font:400 .5rem var(--mono); text-overflow:ellipsis; white-space:nowrap; }
+.inventory-row-actions { display:flex; flex-shrink:0; gap:5px; }
 .inventory-add-button { min-height:29px; flex-shrink:0; padding:0 8px; color:#9cb5b5; font-size:.59rem; }
+.inventory-remove-button { min-height:29px; flex-shrink:0; padding:0 8px; color:#c28d84; font-size:.59rem; }
+.inventory-remove-button:hover:not(:disabled) { color:var(--red); border-color:rgba(240,142,129,.2); }
+.inventory-remove-button:disabled { opacity:.48; cursor:not-allowed; }
 .inventory-empty, .inventory-limit { margin:0; padding:12px; color:#788991; font-size:.62rem; line-height:1.5; }
 .inventory-limit { border-top:1px solid rgba(194,216,226,.06); color:#9caaae; }
 .raw-add-details { margin-top:12px; border-top:1px solid rgba(194,216,226,.08); padding-top:10px; }
@@ -210,6 +214,8 @@ code { font: .68rem var(--mono); color:#adc6c7; }
 .queue-panel h3 { font-size:.91rem; }
 .queue-list { display:flex; flex-direction:column; gap:5px; }
 .queue-item { position:relative; min-height:35px; display:grid; grid-template-columns:minmax(0,1fr) auto 24px; align-items:center; gap:10px; padding:6px 8px; border:1px solid rgba(113,216,199,.1); border-radius:4px; background:rgba(113,216,199,.025); color:#b4c5c6; font-size:.61rem; }
+.queue-item.is-removal { border-color:rgba(240,142,129,.13); background:rgba(240,142,129,.025); }
+.queue-item.is-removal strong { color:#d4a29a; }
 .queue-item strong { color:var(--teal); font-weight:500; }
 .queue-item small { color:#74868e; font:400 .52rem var(--mono); }
 .queue-remove { width:24px; height:24px; border:0; border-radius:3px; background:transparent; color:#9aa9ac; font-size:1rem; cursor:pointer; }
@@ -292,7 +298,8 @@ code { font: .68rem var(--mono); color:#adc6c7; }
   .inventory-list { max-height:330px; }
   .inventory-row { gap:6px; padding:7px 6px; }
   .inventory-item-copy > span { font-size:.45rem; }
-  .inventory-add-button { min-height:27px; padding:0 6px; font-size:.55rem; }
+  .inventory-row-actions { gap:3px; }
+  .inventory-add-button, .inventory-remove-button { min-height:27px; padding:0 5px; font-size:.53rem; }
   .queue-panel { grid-template-columns:1fr; gap:10px; }
   .queue-item { grid-template-columns:minmax(0,1fr) auto 24px; gap:6px; font-size:.56rem; }
   .queue-item small { font-size:.46rem; }
