@@ -6,6 +6,11 @@ const OVERMASTERY_LEVEL_ID_TYPE = 1607
 const MASTER_POINTS_ID_TYPE = 1112
 const MASTER_POINTS_UNIT_ID = 0
 export const MAX_MASTER_POINTS = 9_999_999
+const ITEM_HASH_ID_TYPE = 1801
+const ITEM_QUANTITY_ID_TYPE = 1802
+const ITEM_STATE_ID_TYPES = [1803, 1804]
+const ITEM_EXTRA_STATE_ID_TYPE = 1807
+export const MAX_ITEM_QUANTITY = 0x7fffffff
 const FIRST_CHARACTER_UNIT_ID = 10000
 const LAST_CHARACTER_UNIT_ID = 20000
 const SLOT_BASE = 10000000
@@ -163,6 +168,8 @@ function parseUnitTable(view, base, length, rootPosition, rootFieldIndex, signed
     units.push({
       idType: idPosition === null ? 0 : view.getUint32(base + idPosition, true),
       unitId: unitPosition === null ? 0 : view.getUint32(base + unitPosition, true),
+      hasIdType: idPosition !== null,
+      hasUnitId: unitPosition !== null,
       valueCount,
       firstValue: valueCount > 0 ? readValue(valueDataPosition) : null,
       firstValueOffset: valueCount > 0 ? base + valueDataPosition : null,
@@ -296,9 +303,55 @@ function parseInventory(uintUnits, intUnits, boolUnits) {
     return { rows, occupied: rows.filter((row) => !row.empty).length, available, maxCount, maxSerial: serials.max, serialAmbiguous: serials.ambiguous }
   }
 
+  const itemHashIndex = uintByType.get(ITEM_HASH_ID_TYPE) ?? new Map()
+  const itemQuantityIndex = intByType.get(ITEM_QUANTITY_ID_TYPE) ?? new Map()
+  const itemUnitIds = [...itemHashIndex.keys()].sort((a, b) => a - b)
+  const itemRows = itemUnitIds.map((unitId) => {
+    const hashEntries = itemHashIndex.get(unitId) ?? []
+    const quantityEntries = itemQuantityIndex.get(unitId) ?? []
+    const hash = record(uintByType, ITEM_HASH_ID_TYPE, unitId)
+    const quantity = record(intByType, ITEM_QUANTITY_ID_TYPE, unitId)
+    const stateEntries = ITEM_STATE_ID_TYPES.map((idType) => ({
+      entries: (uintByType.get(idType) ?? new Map()).get(unitId) ?? [],
+      record: record(uintByType, idType, unitId),
+    }))
+    const extraEntries = (intByType.get(ITEM_EXTRA_STATE_ID_TYPE) ?? new Map()).get(unitId) ?? []
+    const extraState = record(intByType, ITEM_EXTRA_STATE_ID_TYPE, unitId)
+    const hashValue = hash?.firstValue >>> 0
+    const quantityValue = quantity?.firstValue ?? null
+    const activeFromQuantity = quantityValue !== null
+      ? quantityValue > 0
+      : quantityEntries.some((entry) => entry.firstValue !== null && entry.firstValue > 0)
+    const stateMetadataAmbiguous = stateEntries.some(({ entries, record: stateRecord }) => (
+      entries.length > 0 && (!stateRecord || !stateRecord.hasIdType || !stateRecord.hasUnitId)
+    )) || (extraEntries.length > 0 && (!extraState || !extraState.hasIdType || !extraState.hasUnitId))
+    const activeFromState = !stateMetadataAmbiguous && (
+      stateEntries.some(({ record: stateRecord }) => Boolean(stateRecord && stateRecord.firstValue !== 0)) ||
+      Boolean(extraState && extraState.firstValue !== 0)
+    )
+    const validHash = Boolean(hash) && hashValue !== 0 && hashValue !== EMPTY_HASH
+    const active = validHash && (activeFromQuantity || activeFromState)
+    const completePair = hashEntries.length === 1 && Boolean(hash?.hasIdType && hash?.hasUnitId) &&
+      quantityEntries.length === 1 && Boolean(quantity?.hasIdType && quantity?.hasUnitId)
+    const editable = Boolean(
+      active && completePair && quantityValue !== null && quantityValue >= 0 &&
+      (activeFromQuantity || !stateMetadataAmbiguous)
+    )
+    return {
+      unitId,
+      hash: hash ? hashValue : null,
+      hashText: hash ? hash32(hashValue) : 'Ambiguous item hash record',
+      quantity: quantityValue,
+      active,
+      editable,
+      offset: quantity?.firstValueOffset ?? null,
+    }
+  })
+
   return {
     sigils: slots({ kind: 'sigil', config: SIGIL, signedTypes: [SIGIL.levelIdType] }),
     wrightstones: slots({ kind: 'wrightstone', config: WRIGHTSTONE, signedTypes: [] }),
+    items: { rows: itemRows, activeCount: itemRows.filter((row) => row.active).length },
   }
 }
 
@@ -697,6 +750,28 @@ function planInventoryChanges(parsed, additions, removals) {
   return { patches, expected, cleared: cleared.filter((item) => !overwrittenSlots.has(`${item.kind}:${item.unitId}`)) }
 }
 
+function planItemQuantityChanges(parsed, changes) {
+  if (!Array.isArray(changes)) fail('Bag item quantity changes are malformed.')
+  const rows = parsed.inventory?.items?.rows ?? []
+  const patches = []
+  const expected = []
+  const seen = new Set()
+  for (const change of changes) {
+    if (!Number.isInteger(change?.unitId) || change.unitId < 0) fail('A bag item quantity change has an invalid unit ID.')
+    if (!Number.isInteger(change.quantity) || change.quantity < 0 || change.quantity > MAX_ITEM_QUANTITY) {
+      fail(`Item quantity must be a whole number from 0 to ${MAX_ITEM_QUANTITY.toLocaleString('en-US')}.`)
+    }
+    if (seen.has(change.unitId)) fail('A bag item quantity was queued more than once.')
+    seen.add(change.unitId)
+    const row = rows.find((entry) => entry.unitId === change.unitId)
+    if (!row || !row.active || !row.editable || row.offset === null) fail('This bag item quantity cannot be safely changed.')
+    if (change.quantity === row.quantity) continue
+    patches.push({ offset: row.offset, value: change.quantity, type: 'int32' })
+    expected.push({ unitId: row.unitId, quantity: change.quantity })
+  }
+  return { patches, expected }
+}
+
 function verifyInventoryPlan(inventory, expected, cleared) {
   for (const item of expected) {
     const rows = inventory[item.kind === 'sigil' ? 'sigils' : 'wrightstones'].rows
@@ -730,9 +805,19 @@ function verifyInventoryPlan(inventory, expected, cleared) {
   }
 }
 
-export function createEditedSave(bytes, parsed, changes, inventoryAdds = [], inventoryRemovals = [], masterPointsValue = null) {
+function verifyItemQuantityPlan(items, expected) {
+  for (const change of expected) {
+    const row = items.rows.find((entry) => entry.unitId === change.unitId)
+    if (!row || row.quantity !== change.quantity) {
+      fail(`Read-back verification failed for bag item quantity in unit ${change.unitId}.`)
+    }
+  }
+}
+
+export function createEditedSave(bytes, parsed, changes, inventoryAdds = [], inventoryRemovals = [], masterPointsValue = null, itemQuantityChanges = []) {
   if (!parsed.checksumValid) fail('The input save checksum is invalid; editing is disabled for safety.')
-  if (!changes.length && !inventoryAdds.length && !inventoryRemovals.length && masterPointsValue === null) fail('There are no changes to download.')
+  const itemQuantityPlan = planItemQuantityChanges(parsed, itemQuantityChanges)
+  if (!changes.length && !inventoryAdds.length && !inventoryRemovals.length && masterPointsValue === null && !itemQuantityPlan.expected.length) fail('There are no changes to download.')
   if (masterPointsValue !== null) {
     if (!parsed.masterPoints?.editable || parsed.masterPoints.offset === null) fail('The Mastery Points field is missing or ambiguous in this save.')
     if (!Number.isInteger(masterPointsValue) || masterPointsValue < 0 || masterPointsValue > MAX_MASTER_POINTS) {
@@ -755,6 +840,7 @@ export function createEditedSave(bytes, parsed, changes, inventoryAdds = [], inv
     else if (patch.type === 'uint8') view.setUint8(patch.offset, patch.value)
     else view.setUint32(patch.offset, patch.value, true)
   }
+  for (const patch of itemQuantityPlan.patches) view.setInt32(patch.offset, patch.value, true)
 
   const checksum = xxhash64(view, parsed.checksumStart, parsed.checksumEnd, HASH_SEED)
   view.setBigUint64(parsed.checksumOffset, checksum, true)
@@ -774,6 +860,7 @@ export function createEditedSave(bytes, parsed, changes, inventoryAdds = [], inv
     fail('Read-back verification failed for Mastery Points.')
   }
   verifyInventoryPlan(reparsed.inventory, inventoryPlan.expected, inventoryPlan.cleared)
+  verifyItemQuantityPlan(reparsed.inventory.items, itemQuantityPlan.expected)
   return output
 }
 

@@ -177,6 +177,7 @@ code { font: .68rem var(--mono); color:#adc6c7; }
 .inventory-intro > p { max-width:540px; margin:0; color:#82929a; font-size:.68rem; line-height:1.65; }
 .inventory-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start; }
 .inventory-card, .queue-panel { min-width:0; padding:17px 16px 15px; border:1px solid var(--line); border-radius:8px; background:rgba(24,35,46,.8); }
+.stackable-items-card { grid-column:1 / -1; }
 .mastery-points-workspace { min-height:370px; }
 .mastery-points-card { max-width:620px; }
 .mastery-points-card .inventory-capacity { display:flex; flex-direction:column; gap:4px; }
@@ -201,6 +202,11 @@ code { font: .68rem var(--mono); color:#adc6c7; }
 .inventory-item-copy small { color:#768890; font:400 .52rem var(--mono); }
 .inventory-item-copy > span { overflow:hidden; color:#8ea9a6; font:400 .5rem var(--mono); text-overflow:ellipsis; white-space:nowrap; }
 .inventory-row-actions { display:flex; flex-shrink:0; gap:5px; }
+.item-quantity-form { display:flex; align-items:flex-end; flex-shrink:0; gap:6px; }
+.item-quantity-form .raw-field { width:100px; }
+.item-quantity-form .raw-field input { height:29px; padding:0 6px; font-size:.59rem; }
+.item-quantity-apply { min-height:29px; flex-shrink:0; padding:0 8px; font-size:.56rem; }
+.item-quantity-apply:disabled { opacity:.48; cursor:not-allowed; }
 .inventory-add-button { min-height:29px; flex-shrink:0; padding:0 8px; color:#9cb5b5; font-size:.59rem; }
 .inventory-remove-button { min-height:29px; flex-shrink:0; padding:0 8px; color:#c28d84; font-size:.59rem; }
 .inventory-remove-button:hover:not(:disabled) { color:var(--red); border-color:rgba(240,142,129,.2); }
@@ -311,6 +317,9 @@ code { font: .68rem var(--mono); color:#adc6c7; }
   .inventory-row { gap:6px; padding:7px 6px; }
   .inventory-item-copy > span { font-size:.45rem; }
   .inventory-row-actions { gap:3px; }
+  .item-quantity-form { gap:3px; }
+  .item-quantity-form .raw-field { width:78px; }
+  .item-quantity-apply { padding:0 5px; font-size:.52rem; }
   .inventory-add-button, .inventory-remove-button { min-height:27px; padding:0 5px; font-size:.53rem; }
   .queue-panel { grid-template-columns:1fr; gap:10px; }
   .queue-item { grid-template-columns:minmax(0,1fr) auto 24px; gap:6px; font-size:.56rem; }

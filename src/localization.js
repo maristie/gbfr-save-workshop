@@ -22,6 +22,22 @@ const UI_TRANSLATIONS = {
   'FIELD KIT': ['フィールドキット', '战术工具', '戰術工具'],
   'WEB EDITION': ['ウェブ版', '网页版', '網頁版'],
   PROGRESSION: ['進行状況', '进度', '進度'],
+  'Edit bag items.': ['所持品を編集。', '编辑背包物品。', '編輯背包物品。'],
+  'STACKABLE ITEMS': ['スタック可能アイテム', '可堆叠物品', '可堆疊物品'],
+  'Items and materials': ['アイテムと素材', '物品与素材', '物品與素材'],
+  'Set quantities for stackable items, or add and remove Sigils and Wrightstones. The editor checks each changed record and the save checksum before download.': ['スタック可能なアイテムの数量を設定したり、ジーンやウェールライトストーンを追加・削除したりできます。ダウンロード前に変更レコードとセーブのチェックサムを検証します。', '设置可堆叠物品的数量，或添加、移除因子与辉石。下载前会检查每条更改记录和存档校验和。', '設定可堆疊物品的數量，或新增、移除因子與輝石。下載前會檢查每筆變更紀錄與存檔檢查碼。'],
+  'Set quantities for existing materials, currency, consumables, and other stackable items. Only stacks already active in the save can be edited. The save field accepts 0–2,147,483,647.': ['所持している素材、通貨、消耗品などの数量を設定できます。セーブデータですでに有効なスタックのみ編集できます。保存フィールドは0～2,147,483,647に対応します。', '设置已有素材、货币、消耗品和其他可堆叠物品的数量。只能编辑存档中已启用的堆叠。存档字段范围为 0–2,147,483,647。', '設定已有素材、貨幣、消耗品與其他可堆疊物品的數量。只能編輯存檔中已啟用的堆疊。存檔欄位範圍為 0–2,147,483,647。'],
+  'Search item names, IDs, hashes, or slot': ['アイテム名、ID、ハッシュ、スロットを検索', '搜索物品名称、ID、哈希或槽位', '搜尋物品名稱、ID、雜湊或欄位'],
+  'Current amount': ['現在の数量', '当前数量', '目前數量'],
+  'New amount': ['変更後の数量', '新数量', '新數量'],
+  AMOUNT: ['数量', '数量', '數量'],
+  Quantity: ['数量', '数量', '數量'],
+  Unit: ['ユニット', '单位', '單位'],
+  'active stacks': ['有効なスタック', '已启用堆叠', '已啟用堆疊'],
+  editable: ['編集可能', '可编辑', '可編輯'],
+  'No matching bag items.': ['一致する所持品はありません。', '没有匹配的背包物品。', '沒有符合的背包物品。'],
+  'Unavailable': ['利用不可', '不可用', '無法使用'],
+  'Read-only: item or quantity fields are incomplete or ambiguous.': ['読み取り専用：アイテムまたは数量項目が不完全か、曖昧です。', '只读：物品或数量字段不完整或不明确。', '唯讀：物品或數量欄位不完整或不明確。'],
   'Mastery Points': ['マスタリーポイント', '精通点数', '精通點數'],
   'Set your Mastery Points.': ['マスタリーポイントを設定。', '设置精通点数。', '設定精通點數。'],
   'Choose the balance to keep in your save. The editor verifies the value before downloading the edited copy.': ['セーブデータに保存するポイント数を指定できます。編集済みコピーのダウンロード前に値を検証します。', '设置要保留在存档中的点数。下载编辑后的副本前会验证该数值。', '設定要保留在存檔中的點數。下載編輯後的副本前會驗證該數值。'],
@@ -41,6 +57,7 @@ const UI_TRANSLATIONS = {
   'INDEPENDENT COMMUNITY TOOL · SAVE FILES NEVER LEAVE YOUR BROWSER': ['コミュニティ制作ツール · セーブデータはブラウザーの外に送信されません', '独立社区工具 · 存档不会离开浏览器', '獨立社群工具 · 存檔不會離開瀏覽器'],
   'DESIGNED FOR KEYBOARD, MOUSE & TOUCH': ['キーボード・マウス・タッチ操作に対応', '支持键盘、鼠标和触控操作', '支援鍵盤、滑鼠與觸控操作'],
   'Edit overmasteries. Set Mastery Points.': ['オーバーマスタリーを編集し、マスタリーポイントを設定。', '编辑角色强化属性，设置精通点数。', '編輯角色強化屬性，設定精通點數。'],
+  'Read a Relink save, adjust overmastery stats and Mastery Points, edit existing stackable item quantities, add Sigils and Wrightstones, or choose equipment from the catalog. Then download a verified copy.': ['Relinkのセーブデータを読み込み、オーバーマスタリーやマスタリーポイント、所持アイテムの数量を調整し、ジーンやウェールライトストーンを追加・削除できます。検証済みのコピーをダウンロードしてください。', '读取 Relink 存档，调整角色强化属性、精通点数和已有物品数量，添加或移除因子与辉石。然后下载经过验证的副本。', '讀取 Relink 存檔，調整角色強化屬性、精通點數與已有物品數量，新增或移除因子與輝石。然後下載經過驗證的副本。'],
   'Read a Relink save, adjust overmastery stats and Mastery Points, add Sigils and Wrightstones, remove unassigned Sigils or inactive Wrightstones, or choose items by name from the catalog. Then download a verified copy.': ['Relinkのセーブデータを読み込み、オーバーマスタリーやマスタリーポイントを調整したり、ジーンやウェールライトストーンを追加・削除したり、カタログからアイテムを選択したりできます。検証済みのコピーをダウンロードしてください。', '读取 Relink 存档，调整角色强化属性和精通点数，添加或移除因子与辉石，也可从目录按名称选择物品。然后下载经过验证的副本。', '讀取 Relink 存檔，調整角色強化屬性與精通點數，新增或移除因子與輝石，也可從目錄依名稱選擇物品。然後下載經過驗證的副本。'],
   'Files stay on this device': ['ファイルはこの端末内に保存されます', '文件保留在此设备上', '檔案會保留在此裝置上'],
   'Original save stays untouched': ['元のセーブデータは変更されません', '原始存档不会被修改', '原始存檔不會被修改'],
@@ -182,6 +199,11 @@ const UI_TRANSLATIONS = {
   'Checksum verification failed. No file was downloaded.': ['チェックサムの検証に失敗しました。ファイルはダウンロードされませんでした。', '校验和验证失败。未下载文件。', '檢查碼驗證失敗。未下載檔案。'],
   'Choose an item from the catalog.': ['カタログからアイテムを選択してください。', '请从目录中选择物品。', '請從目錄中選擇物品。'],
   'Quantity must be a positive whole number.': ['個数は1以上の整数で入力してください。', '数量必须为正整数。', '數量必須為正整數。'],
+  'Item quantity must be a whole number from 0 to 2,147,483,647.': ['アイテム数量は0から2,147,483,647までの整数で入力してください。', '物品数量必须是 0 到 2,147,483,647 之间的整数。', '物品數量必須是 0 到 2,147,483,647 之間的整數。'],
+  'This bag item quantity cannot be safely changed.': ['この所持品の数量は安全に変更できません。', '无法安全修改此背包物品的数量。', '無法安全修改此背包物品的數量。'],
+  'Item amount unchanged.': ['アイテム数量は変更されていません。', '物品数量未更改。', '物品數量未變更。'],
+  'Item amount change queued.': ['アイテム数量の変更を保留しました。', '已暂存物品数量更改。', '已暫存物品數量變更。'],
+  'A bag item quantity was queued more than once.': ['所持品数量の変更が重複しています。', '同一背包物品数量被重复暂存。', '同一背包物品數量被重複暫存。'],
   'The selected item has no recognized primary trait.': ['選択したアイテムの主特性を認識できません。', '无法识别所选物品的主词条。', '無法識別所選物品的主詞條。'],
   'Choose a secondary trait available for the selected Sigil.': ['選択したジーンで使用できる第2特性を選択してください。', '请选择所选因子可用的副词条。', '請選擇所選因子可用的副詞條。'],
   'This Sigil requires its fixed secondary trait.': ['このジーンには固定の第2特性が必要です。', '此因子必须使用其固定副词条。', '此因子必須使用其固定副詞條。'],
@@ -315,6 +337,10 @@ function translateDynamicText(text, language) {
     `已排队 ${match[1]} 件物品`,
     `已排入佇列 ${match[1]} 件物品`,
   ][index]
+  match = text.match(/^(\d+) changes? queued$/)
+  if (match) return [`${match[1]} 件の変更を保留中`, `已暂存 ${match[1]} 项更改`, `已暫存 ${match[1]} 項變更`][index]
+  match = text.match(/^Read-back verification failed for bag item quantity in unit (\d+)\.$/)
+  if (match) return [`ユニット ${match[1]} のアイテム数量を読み戻し検証できませんでした。`, `无法验证单位 ${match[1]} 的物品数量回读值。`, `無法驗證單位 ${match[1]} 的物品數量讀回值。`][index]
   match = text.match(/^(\d+)\/(\d+) filled$/)
   if (match) return [`${match[1]}/${match[2]} 個設定済み`, `已填入 ${match[1]}/${match[2]}`, `已填入 ${match[1]}/${match[2]}`][index]
   match = text.match(/^(.+) · (\d+)\/(\d+) filled$/)
@@ -337,6 +363,8 @@ function translateDynamicText(text, language) {
   if (match) return [`所持品 ${match[1]} 個 · 空き ${match[2]} スロット`, `背包中 ${match[1]} 件 · 空槽位 ${match[2]} 个`, `背包中 ${match[1]} 件 · 空欄位 ${match[2]} 個`][index]
   match = text.match(/^Showing 100 of ([\d,]+) matches\. Refine the item name or trait search to narrow the list\.$/)
   if (match) return [`${match[1]} 件中100件を表示中。名前や特性を検索して絞り込んでください。`, `显示 ${match[1]} 条匹配结果中的前 100 条。请按物品名称或词条缩小范围。`, `顯示 ${match[1]} 筆符合結果中的前 100 筆。請依物品名稱或詞條縮小範圍。`][index]
+  match = text.match(/^Showing 100 of ([\d,]+) item matches\. Search item names and IDs to narrow the list\.$/)
+  if (match) return [`${match[1]} 件中100件を表示中。アイテム名やIDで検索して絞り込んでください。`, `显示 ${match[1]} 条匹配结果中的前 100 条。请按物品名称或 ID 缩小范围。`, `顯示 ${match[1]} 筆符合結果中的前 100 筆。請依物品名稱或 ID 縮小範圍。`][index]
   match = text.match(/^Level (\d+) · (.+)$/)
   if (match) return [`レベル ${match[1]} · ${match[2]}`, `等级 ${match[1]} · ${match[2]}`, `等級 ${match[1]} · ${match[2]}`][index]
   match = text.match(/^LV (\d+)(.*)$/)

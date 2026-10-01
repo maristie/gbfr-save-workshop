@@ -1,5 +1,6 @@
 import {
   OVERMASTERY_STATS,
+  MAX_ITEM_QUANTITY,
   MAX_MASTER_POINTS,
   changesForSave,
   checksumDisplay,
@@ -14,6 +15,7 @@ import {
   validateCustomInventoryAddition,
 } from './save-format.js'
 import { INVENTORY_CATALOG } from './inventory-catalog.js'
+import { MATERIAL_ITEMS_BY_HASH } from './material-catalog.js'
 import {
   allInventoryTermNames,
   characterSearchNames,
@@ -40,7 +42,8 @@ const state = {
   masterPointsDraft: null,
   inventoryAdds: [],
   inventoryRemovals: [],
-  inventoryFilter: { sigil: '', wrightstone: '' },
+  itemQuantityDrafts: {},
+  inventoryFilter: { sigil: '', wrightstone: '', items: '' },
   catalogDrafts: { sigil: null, wrightstone: null },
   nextDraftId: 1,
   openRawKind: '',
@@ -88,6 +91,15 @@ function itemLabel(kind, hash) {
   return name
 }
 
+function materialItemForHash(hash) {
+  return MATERIAL_ITEMS_BY_HASH.get(hash >>> 0) ?? null
+}
+
+function materialItemLabel(hash) {
+  const item = materialItemForHash(hash)
+  return item?.name ?? `Uncatalogued item (${hashToText(hash)})`
+}
+
 function traitOptions(traits, includeEmpty = false, selectedHash = '') {
   const empty = includeEmpty ? `<option value="">${escapeHTML(localizeText('No additional trait', state.language))}</option>` : ''
   return `${empty}${traits.map((trait) => `<option value="${trait.hash}" data-max-level="${trait.maxLevel}"${trait.hash === selectedHash ? ' selected' : ''}>${escapeHTML(traitLabel(Number(trait.hash)))}</option>`).join('')}`
@@ -118,6 +130,13 @@ function masterPointsChange() {
   const field = state.parsed?.masterPoints
   if (!field?.editable || state.masterPointsDraft === null || state.masterPointsDraft === field.value) return null
   return state.masterPointsDraft
+}
+
+function itemQuantityChanges() {
+  return Object.entries(state.itemQuantityDrafts).map(([unitId, quantity]) => ({
+    unitId: Number(unitId),
+    quantity,
+  }))
 }
 
 function statOptions(slot) {
@@ -198,7 +217,7 @@ function renderUpload() {
     <div class="welcome-copy">
       <p class="eyebrow"><span class="pulse-dot"></span> SAVE FILE EDITOR <span class="eyebrow-divider">/</span> SAVE WORKSHOP</p>
       <h1>Edit overmasteries. Set Mastery Points.</h1>
-      <p class="welcome-text">Read a Relink save, adjust overmastery stats and Mastery Points, add Sigils and Wrightstones, remove unassigned Sigils or inactive Wrightstones, or choose items by name from the catalog. Then download a verified copy.</p>
+      <p class="welcome-text">Read a Relink save, adjust overmastery stats and Mastery Points, edit existing stackable item quantities, add Sigils and Wrightstones, or choose equipment from the catalog. Then download a verified copy.</p>
       <div class="trust-points">
         <span><i>01</i> Files stay on this device</span>
         <span><i>02</i> Original save stays untouched</span>
@@ -240,7 +259,7 @@ function canDeleteInventoryRow(kind, row) {
 }
 
 function inventoryChangeCount() {
-  return state.inventoryAdds.length + state.inventoryRemovals.length
+  return state.inventoryAdds.length + state.inventoryRemovals.length + itemQuantityChanges().length
 }
 
 function inventoryBucket(kind) {
@@ -312,6 +331,49 @@ function renderInventoryCategory(kind) {
       <p>${catalogHelp}</p>
       ${renderCatalogForm(kind)}
     </details>
+  </section>`
+}
+
+function renderItemStacks() {
+  const bucket = state.parsed.inventory.items
+  const active = bucket.rows.filter((row) => row.active)
+  const search = state.inventoryFilter.items.trim().toLowerCase()
+  const matched = search ? active.filter((row) => {
+    const item = materialItemForHash(row.hash)
+    return [item?.name, item?.id, row.hashText, row.unitId].filter(Boolean).join(' ').toLowerCase().includes(search)
+  }) : active
+  const shown = matched.slice(0, 100)
+  const locale = state.language === 'ja' ? 'ja-JP' : state.language === 'zh-CN' ? 'zh-CN' : state.language === 'zh-TW' ? 'zh-TW' : 'en-US'
+  const rows = shown.map((row) => {
+    const item = materialItemForHash(row.hash)
+    const label = materialItemLabel(row.hash)
+    const itemCode = item?.id ?? row.hashText
+    const hasDraft = Object.hasOwn(state.itemQuantityDrafts, row.unitId)
+    const quantity = hasDraft ? state.itemQuantityDrafts[row.unitId] : row.quantity
+    const disabled = !row.editable || !state.parsed.checksumValid
+    const current = row.quantity === null ? localizeText('Unavailable', state.language) : row.quantity.toLocaleString(locale)
+    const pending = hasDraft ? ` · ${localizeText('New amount', state.language)} ${Number(quantity).toLocaleString(locale)}` : ''
+    const searchText = escapeHTML([label, itemCode, row.hashText, row.unitId].join(' ').toLowerCase())
+    return `<article class="inventory-row item-quantity-row" data-inventory-row data-search="${searchText}">
+      <div class="inventory-item-copy"><strong>${escapeHTML(label)}</strong><small>${escapeHTML(itemCode)} · ${escapeHTML(localizeText('Unit', state.language))} ${row.unitId}</small><span>${escapeHTML(localizeText('Current amount', state.language))}: ${escapeHTML(current)}${escapeHTML(pending)}</span>${row.editable ? '' : `<small>${escapeHTML(localizeText('Read-only: item or quantity fields are incomplete or ambiguous.', state.language))}</small>`}</div>
+      <form class="item-quantity-form" data-role="item-quantity-form" data-unit-id="${row.unitId}">
+        <label class="raw-field" for="item-quantity-${row.unitId}">${escapeHTML(localizeText('AMOUNT', state.language))}
+          <input id="item-quantity-${row.unitId}" data-role="item-quantity-input" type="number" min="0" max="${MAX_ITEM_QUANTITY}" step="1" inputmode="numeric" value="${quantity === null ? '' : escapeHTML(quantity)}" ${disabled ? 'disabled' : ''} required />
+        </label>
+        <button class="subtle-button item-quantity-apply" type="submit" ${disabled ? 'disabled' : ''}>Apply amount</button>
+      </form>
+    </article>`
+  }).join('')
+  const capText = `${active.length.toLocaleString(locale)} ${localizeText('active stacks', state.language)} · ${active.filter((row) => row.editable).length.toLocaleString(locale)} ${localizeText('editable', state.language)}`
+  const emptyMarkup = matched.length === 0 ? `<p class="inventory-empty">${escapeHTML(localizeText('No matching bag items.', state.language))}</p>` : ''
+  const moreMarkup = matched.length > shown.length
+    ? `<p class="inventory-limit">${escapeHTML(localizeText(`Showing 100 of ${matched.length.toLocaleString(locale)} item matches. Search item names and IDs to narrow the list.`, state.language))}</p>`
+    : ''
+  return `<section class="inventory-card stackable-items-card">
+    <div class="inventory-card-heading"><div><p class="eyebrow">STACKABLE ITEMS</p><h3>Items and materials</h3></div><span class="inventory-capacity">${capText}</span></div>
+    <p class="inventory-help">Set quantities for existing materials, currency, consumables, and other stackable items. Only stacks already active in the save can be edited. The save field accepts 0–${MAX_ITEM_QUANTITY.toLocaleString('en-US')}.</p>
+    <label class="search-box inventory-search"><span>⌕</span><input data-role="inventory-search" data-kind="items" type="search" placeholder="Search item names, IDs, hashes, or slot" value="${escapeHTML(state.inventoryFilter.items)}" autocomplete="off" /></label>
+    <div class="inventory-list">${rows || emptyMarkup}${moreMarkup}</div>
   </section>`
 }
 
@@ -435,7 +497,8 @@ function updateTraitLevelLimit(select) {
 function renderInventoryPanel() {
   const queued = state.inventoryAdds
   const removals = state.inventoryRemovals
-  const queuedMarkup = queued.length || removals.length ? `${queued.map((addition) => `<div class="queue-item">
+  const quantityChanges = itemQuantityChanges()
+  const queuedMarkup = queued.length || removals.length || quantityChanges.length ? `${queued.map((addition) => `<div class="queue-item">
     <span><strong>${escapeHTML(itemLabel(addition.kind, addition.hash))}</strong></span>
     <small>${addition.kind === 'sigil' ? `Lv ${addition.level}` : `${addition.lanes.filter((lane) => lane.hash !== 0x887ae0b0 && lane.hash !== 0).length} traits`}${addition.sourceUnitId ? ` · copied from ${addition.sourceUnitId}` : ' · catalog selection'}</small>
     <button class="queue-remove" data-action="remove-queued" data-draft-id="${addition.draftId}" type="button" aria-label="Remove queued item">×</button>
@@ -446,11 +509,18 @@ function renderInventoryPanel() {
       <small>${escapeHTML(localizeText(removal.kind === 'sigil' ? 'Sigil' : 'Wrightstone', state.language))} · Unit ${removal.unitId}</small>
       <button class="queue-remove" data-action="restore-removal" data-kind="${removal.kind}" data-unit-id="${removal.unitId}" type="button" aria-label="Undo item removal">×</button>
     </div>`
-  }).join('')}` : '<p class="queue-empty">No bag changes queued.</p>'
+  }).join('')}${quantityChanges.map((change) => {
+    const row = state.parsed.inventory.items.rows.find((entry) => entry.unitId === change.unitId)
+    return `<div class="queue-item is-quantity-change">
+      <span><strong>${escapeHTML(materialItemLabel(row?.hash ?? 0))}</strong></span>
+      <small>${escapeHTML(localizeText('Unit', state.language))} ${change.unitId} · ${escapeHTML(localizeText('Quantity', state.language))} ${Number(row?.quantity ?? 0).toLocaleString()} → ${Number(change.quantity).toLocaleString()}</small>
+      <button class="queue-remove" data-action="clear-item-quantity" data-unit-id="${change.unitId}" type="button" aria-label="Undo item quantity change">×</button>
+    </div>`
+  }).join('')}` : `<p class="queue-empty">${escapeHTML(localizeText('No bag changes queued.', state.language))}</p>`
   const pendingCount = inventoryChangeCount()
   return `<section class="inventory-workspace">
-    <div class="inventory-intro"><div><p class="eyebrow">BAG INVENTORY</p><h2>Edit Sigils and Wrightstones.</h2></div><p>Copy an entry, remove an unassigned Sigil or inactive Wrightstone, or choose one by name from the catalog. Hashes are filled in for you. Export verifies the changed records and checksum before download.</p></div>
-    <div class="inventory-grid">${renderInventoryCategory('sigil')}${renderInventoryCategory('wrightstone')}</div>
+    <div class="inventory-intro"><div><p class="eyebrow">BAG INVENTORY</p><h2>Edit bag items.</h2></div><p>Set quantities for stackable items, or add and remove Sigils and Wrightstones. The editor checks each changed record and the save checksum before download.</p></div>
+    <div class="inventory-grid">${renderInventoryCategory('sigil')}${renderInventoryCategory('wrightstone')}${renderItemStacks()}</div>
     <section class="queue-panel"><div><p class="eyebrow">PENDING CHANGES</p><h3>${pendingCount} change${pendingCount === 1 ? '' : 's'} queued</h3></div><div class="queue-list">${queuedMarkup}</div></section>
   </section>`
 }
@@ -645,6 +715,10 @@ function bindEvents() {
     })
   })
 
+  app.querySelectorAll('[data-role="item-quantity-form"]').forEach((form) => {
+    form.addEventListener('submit', (event) => applyItemQuantity(event, form))
+  })
+
   app.querySelectorAll('.raw-add-form').forEach((form) => {
     form.addEventListener('submit', (event) => queueCatalogInventoryItem(event, form))
     form.querySelector('[data-role="catalog-item"]')?.addEventListener('change', () => refreshCatalogForm(form))
@@ -667,6 +741,13 @@ function bindEvents() {
       if (action === 'queue-removal') queueInventoryRemoval(event.currentTarget.dataset.kind, Number(event.currentTarget.dataset.unitId))
       if (action === 'restore-removal') restoreInventoryRemoval(event.currentTarget.dataset.kind, Number(event.currentTarget.dataset.unitId))
       if (action === 'remove-queued') removeQueuedAddition(Number(event.currentTarget.dataset.draftId))
+      if (action === 'clear-item-quantity') {
+        const unitId = Number(event.currentTarget.dataset.unitId)
+        state.itemQuantityDrafts = Object.fromEntries(Object.entries(state.itemQuantityDrafts).filter(([key]) => Number(key) !== unitId))
+        state.error = ''
+        state.notice = ''
+        render()
+      }
       if (action === 'reset') resetEdits()
       if (action === 'clear-slot') clearSlot(Number(event.currentTarget.dataset.unitId), Number(event.currentTarget.dataset.slotIndex))
       if (action === 'download') downloadEditedSave()
@@ -837,6 +918,34 @@ function removeQueuedAddition(draftId) {
   render()
 }
 
+function applyItemQuantity(event, form) {
+  event.preventDefault()
+  try {
+    if (!state.parsed?.checksumValid) throw new Error('The input save checksum is invalid; editing is disabled for safety.')
+    const unitId = Number(form.dataset.unitId)
+    const row = state.parsed.inventory.items.rows.find((entry) => entry.unitId === unitId)
+    if (!row?.active || !row.editable) throw new Error('This bag item quantity cannot be safely changed.')
+    const text = form.querySelector('[data-role="item-quantity-input"]')?.value.trim() ?? ''
+    if (!/^\d+$/.test(text)) {
+      throw new Error(`Item quantity must be a whole number from 0 to ${MAX_ITEM_QUANTITY.toLocaleString('en-US')}.`)
+    }
+    const quantity = Number(text)
+    if (!Number.isSafeInteger(quantity) || quantity > MAX_ITEM_QUANTITY) {
+      throw new Error(`Item quantity must be a whole number from 0 to ${MAX_ITEM_QUANTITY.toLocaleString('en-US')}.`)
+    }
+    const drafts = { ...state.itemQuantityDrafts }
+    if (quantity === row.quantity) delete drafts[unitId]
+    else drafts[unitId] = quantity
+    state.itemQuantityDrafts = drafts
+    state.error = ''
+    state.notice = quantity === row.quantity ? 'Item amount unchanged.' : 'Item amount change queued.'
+  } catch (error) {
+    state.error = error instanceof Error ? error.message : String(error)
+    state.notice = ''
+  }
+  render()
+}
+
 function resetEdits() {
   for (const character of state.parsed.characters) {
     for (const slot of character.slots) {
@@ -846,6 +955,7 @@ function resetEdits() {
   }
   state.inventoryAdds = []
   state.inventoryRemovals = []
+  state.itemQuantityDrafts = {}
   state.masterPointsDraft = null
   state.error = ''
   state.notice = 'All edits reset.'
@@ -862,13 +972,14 @@ async function loadFile(file) {
     state.bytes = bytes
     state.parsed = parsed
     state.masterPointsDraft = null
+    state.itemQuantityDrafts = {}
     state.selectedUnitId = parsed.characters[0]?.unitId ?? null
     state.filter = ''
     state.activeTab = 'overmastery'
     state.inventoryAdds = []
     state.inventoryRemovals = []
     state.catalogDrafts = { sigil: null, wrightstone: null }
-    state.inventoryFilter = { sigil: '', wrightstone: '' }
+    state.inventoryFilter = { sigil: '', wrightstone: '', items: '' }
     state.openRawKind = ''
     if (!parsed.checksumValid) state.notice = ''
   } catch (error) {
@@ -877,6 +988,7 @@ async function loadFile(file) {
     state.bytes = null
     state.parsed = null
     state.masterPointsDraft = null
+    state.itemQuantityDrafts = {}
     state.selectedUnitId = null
     state.inventoryAdds = []
     state.inventoryRemovals = []
@@ -911,7 +1023,8 @@ function downloadEditedSave() {
   try {
     const changes = currentChanges()
     const pointsChange = masterPointsChange()
-    const output = createEditedSave(state.bytes, state.parsed, changes, state.inventoryAdds, state.inventoryRemovals, pointsChange)
+    const quantityChanges = itemQuantityChanges()
+    const output = createEditedSave(state.bytes, state.parsed, changes, state.inventoryAdds, state.inventoryRemovals, pointsChange, quantityChanges)
     const blob = new Blob([output], { type: 'application/octet-stream' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -924,9 +1037,10 @@ function downloadEditedSave() {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000)
     const additionCount = state.inventoryAdds.length
     const removalCount = state.inventoryRemovals.length
+    const itemQuantityCount = quantityChanges.length
     const overmasteryCount = changes.length
     const masterPointsCount = pointsChange === null ? 0 : 1
-    state.notice = `Downloaded ${link.download}; checksum, ${overmasteryCount} overmastery edits, ${additionCount} bag additions, ${removalCount} bag removals, and ${masterPointsCount} Mastery Points edits verified.`
+    state.notice = `Downloaded ${link.download}; checksum, ${overmasteryCount} overmastery edits, ${additionCount} bag additions, ${removalCount} bag removals, ${itemQuantityCount} item quantity edits, and ${masterPointsCount} Mastery Points edits verified.`
   } catch (error) {
     state.error = error instanceof Error ? error.message : String(error)
     state.notice = ''
