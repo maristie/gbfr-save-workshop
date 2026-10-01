@@ -1,6 +1,6 @@
 # Relink Save Workshop
 
-A browser-based, save-file-only editor for Granblue Fantasy: Relink. It edits overmasteries and adds or removes Sigils and Wrightstones in the bag. It does not connect to the game or modify game memory. The app reads and edits the selected save locally, then downloads an edited copy.
+A browser-based, save-file-only editor for Granblue Fantasy: Relink. It edits overmasteries and Mastery Points, and adds or removes Sigils and Wrightstones in the bag. It does not connect to the game or modify game memory. The app reads and edits the selected save locally, then downloads an edited copy.
 
 ## Run locally
 
@@ -21,9 +21,9 @@ Use the language selector in the header to switch between English, Japanese, Sim
 ## Use
 
 1. Choose or drop a readable `.dat` save file.
-2. Use **Overmastery** to edit any character’s four overmastery slots, or **Bag items** to add or remove Sigils and Wrightstones.
+2. Use **Overmastery** to edit any character’s four overmastery slots, **Mastery Points** to set the saved balance, or **Bag items** to add or remove Sigils and Wrightstones.
 3. In **Bag items**, copy an existing entry, delete an unassigned Sigil or inactive Wrightstone, or open **Create from item catalog** to choose a named item, its traits, and how many copies to add. For selectable `+` Sigils, the second-trait list includes every cataloged trait, allowing combinations made through Sigil Synthesis even when they are outside the natural drop pool. Fixed-secondary Sigils keep their fixed trait. The editor fills in save hashes automatically and keeps your catalog selections when you queue additions or removals. Copies are unassigned and use existing empty save slots. Trait combinations are not checked for in-game legality, and the catalog may not cover every game item.
-4. Choose **Download edited save**. The browser checks the save checksum and reads back changed overmastery and inventory fields before exporting a new `*-edited.dat` file.
+4. Choose **Download edited save**. The browser checks the save checksum and reads back changed overmastery, Mastery Points, and inventory fields before exporting a new `*-edited.dat` file.
 5. Keep the original save as a backup and make sure the game is closed before replacing a save manually.
 
 The editor preserves unknown overmastery hashes and invalid existing values when their slots are untouched. Character records whose identity is not in the supported playable-character map, as well as incomplete or ambiguous attribute/level pairs, are read-only. A checksum mismatch disables exporting.
@@ -38,6 +38,8 @@ The two references describe `1607` differently. BitterG's save path accepts the 
 
 Save Lab also labels character field `1404` as a separate four-hash RNG/overmastery vector. The editor here targets the four visible effect/value pairs in `1606/1607`; it does not conflate field `1404` with those slots. Its current 1606 catalog is based on the hashes recognized by BitterG's save path; unrecognized hashes are preserved when left untouched. See Save Lab's [field mapping audit](https://github.com/xcier/GBFR-Save-Editor/blob/8fdb4497fcf0cf67a4b122062a00f8ff07cc3942/gbfr_editor/resources/overmastery_mapping_audit.csv) and [character field implementation](https://github.com/xcier/GBFR-Save-Editor/blob/8fdb4497fcf0cf67a4b122062a00f8ff07cc3942/gbfr_editor/core/cheat_actions.py) for that distinction.
 
+Save Lab maps the Mastery Points balance to signed `IDType 1112`, unit ID `0`, and caps its editor at 9,999,999. This project uses that field mapping, allows edits only when exactly one complete scalar record exists, and verifies the value after writing. The reference snapshot predates the official 2.0.6 update, so the mapping has not been confirmed against a 2.0.6 save here.
+
 ## Save layout
 
 The format analysis follows the save and offline-loadout paths in [BitterG/GBFR-PE-Patch-Tool](https://github.com/BitterG/GBFR-PE-Patch-Tool):
@@ -45,6 +47,7 @@ The format analysis follows the save and offline-loadout paths in [BitterG/GBFR-
 - A character record is `IDType 1301`.
 - Four overmastery attributes use `IDType 1606`; their level flags use `IDType 1607`.
 - A character's four slot unit IDs start at `10,000,000 + (characterUnitID - 10,000) × 1,000`.
+- The Mastery Points balance is signed `IDType 1112` on unit ID `0`; this editor accepts `0` through `9,999,999`.
 - A level is stored as a single bit: `1` through `512`, corresponding to levels 1 through 10.
 - An empty stat uses the save's `0x887AE0B0` empty-value hash and level `0`.
 - The edited slot checksum is recalculated using the hash seed and the section selected by save field `IDType 1003`.
@@ -53,9 +56,9 @@ The format analysis follows the save and offline-loadout paths in [BitterG/GBFR-
 
 Relevant upstream files, pinned to the inspected revision: [`internal/backend/loadout_stats.go`](https://github.com/BitterG/GBFR-PE-Patch-Tool/blob/b67bce7704719e331359c1a3393ec8f090bcc192/internal/backend/loadout_stats.go) reads the four save slots; [`internal/backend/loadout_import_apply.go`](https://github.com/BitterG/GBFR-PE-Patch-Tool/blob/b67bce7704719e331359c1a3393ec8f090bcc192/internal/backend/loadout_import_apply.go) writes and verifies them; [`internal/backend/sigil_store.go`](https://github.com/BitterG/GBFR-PE-Patch-Tool/blob/b67bce7704719e331359c1a3393ec8f090bcc192/internal/backend/sigil_store.go) and [`internal/backend/wrightstone_store.go`](https://github.com/BitterG/GBFR-PE-Patch-Tool/blob/b67bce7704719e331359c1a3393ec8f090bcc192/internal/backend/wrightstone_store.go) define the Sigil and Wrightstone fields; [`internal/backend/sigil_gen.go`](https://github.com/BitterG/GBFR-PE-Patch-Tool/blob/b67bce7704719e331359c1a3393ec8f090bcc192/internal/backend/sigil_gen.go) and [`internal/backend/wrightstone_gen.go`](https://github.com/BitterG/GBFR-PE-Patch-Tool/blob/b67bce7704719e331359c1a3393ec8f090bcc192/internal/backend/wrightstone_gen.go) allocate empty slots and verify writes; [`internal/backend/overlimit.go`](https://github.com/BitterG/GBFR-PE-Patch-Tool/blob/b67bce7704719e331359c1a3393ec8f090bcc192/internal/backend/overlimit.go) contains the recognized stat hashes and value curves. The upstream desktop app also has separate live-memory editors; this project uses only save-file writes.
 
-The `xcier/GBFR-Save-Editor` [Sigils and inventory implementation](https://github.com/xcier/GBFR-Save-Editor/blob/8fdb4497fcf0cf67a4b122062a00f8ff07cc3942/gbfr_editor/ui/main_window.py) provides another comparison. Both references reuse empty preallocated rows and update per-item fields. BitterG’s save writer uses normal Sigil flags `2`, an empty owner hash, and Wrightstone `2104=false` / flags `2`; xcier documents `2707=3` as a common locked, unassigned Sigil variant. This editor uses the BitterG normal flags for newly added entries, leaving them unassigned and unlocked. The web app resolves named catalog choices to item and trait hashes without copying either reference’s generator code or legality rules. The catalog is a lookup aid, not a guarantee that any selected trait combination is legal in-game. The xcier snapshot above predates the official 2.0.6 update and does not confirm behavior on that game version.
+The `xcier/GBFR-Save-Editor` [Mastery Points mapping](https://github.com/xcier/GBFR-Save-Editor/blob/8fdb4497fcf0cf67a4b122062a00f8ff07cc3942/gbfr_editor/data/save_id_catalog.py) and [wallet field implementation](https://github.com/xcier/GBFR-Save-Editor/blob/8fdb4497fcf0cf67a4b122062a00f8ff07cc3942/gbfr_editor/ui/main_window.py) informed the `1112` mapping above. Its [Sigils and inventory implementation](https://github.com/xcier/GBFR-Save-Editor/blob/8fdb4497fcf0cf67a4b122062a00f8ff07cc3942/gbfr_editor/ui/main_window.py) provides another comparison. Both inventory references reuse empty preallocated rows and update per-item fields. BitterG’s save writer uses normal Sigil flags `2`, an empty owner hash, and Wrightstone `2104=false` / flags `2`; xcier documents `2707=3` as a common locked, unassigned Sigil variant. This editor uses the BitterG normal flags for newly added entries, leaving them unassigned and unlocked. The web app resolves named catalog choices to item and trait hashes without copying either reference’s generator code or legality rules. The catalog is a lookup aid, not a guarantee that any selected trait combination is legal in-game. The xcier snapshot above predates the official 2.0.6 update and does not confirm behavior on that game version.
 
-The app checks for the expected FlatBuffers save structure and fails closed when required character, overmastery, inventory, or checksum data cannot be identified. It is not a universal save converter; saves with a different or encrypted layout are not supported.
+The app checks for the expected FlatBuffers save structure and fails closed when required character, overmastery, inventory, or checksum data cannot be identified. The Mastery Points control is read-only if its field is missing, duplicated, or incomplete. It is not a universal save converter; saves with a different or encrypted layout are not supported.
 
 ## Credits and licensing
 

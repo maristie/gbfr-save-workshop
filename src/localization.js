@@ -21,16 +21,30 @@ const UI_TRANSLATIONS = {
   'Open save': ['セーブを開く', '打开存档', '開啟存檔'],
   'FIELD KIT': ['フィールドキット', '战术工具', '戰術工具'],
   'WEB EDITION': ['ウェブ版', '网页版', '網頁版'],
+  PROGRESSION: ['進行状況', '进度', '進度'],
+  'Mastery Points': ['マスタリーポイント', '精通点数', '精通點數'],
+  'Set your Mastery Points.': ['マスタリーポイントを設定。', '设置精通点数。', '設定精通點數。'],
+  'Choose the balance to keep in your save. The editor verifies the value before downloading the edited copy.': ['セーブデータに保存するポイント数を指定できます。編集済みコピーのダウンロード前に値を検証します。', '设置要保留在存档中的点数。下载编辑后的副本前会验证该数值。', '設定要保留在存檔中的點數。下載編輯後的副本前會驗證該數值。'],
+  'PROFILE BALANCE': ['プロフィール残高', '个人资料余额', '個人資料餘額'],
+  'CURRENT BALANCE': ['現在の残高', '当前余额', '目前餘額'],
+  'NEW AMOUNT': ['新しい数量', '新数量', '新數量'],
+  'Apply amount': ['数量を適用', '应用数量', '套用數量'],
+  'Pending amount': ['変更予定の数量', '待应用数量', '待套用數量'],
+  'Mastery Points are read-only in this save.': ['このセーブデータのマスタリーポイントは読み取り専用です。', '此存档中的精通点数为只读。', '此存檔中的精通點數為唯讀。'],
+  'The value field is missing, duplicated, or incomplete.': ['値の項目がないか、重複または不完全です。', '数值字段缺失、重复或不完整。', '數值欄位缺少、重複或不完整。'],
+  'Mastery Points amount unchanged.': ['マスタリーポイント数は変更されていません。', '精通点数未更改。', '精通點數未變更。'],
+  'Mastery Points change queued.': ['マスタリーポイントの変更を保留しました。', '已暂存精通点数更改。', '已暫存精通點數變更。'],
+  'The Mastery Points field is missing or ambiguous in this save.': ['このセーブデータのマスタリーポイント項目がないか、特定できません。', '此存档中的精通点数字段缺失或不明确。', '此存檔中的精通點數欄位缺少或不明確。'],
   'Couldn’t apply this change.': ['変更を適用できませんでした。', '无法应用此更改。', '無法套用這項變更。'],
   'Couldn’t open this save.': ['セーブを開けませんでした。', '无法打开此存档。', '無法開啟此存檔。'],
   Dismiss: ['閉じる', '关闭', '關閉'],
   'INDEPENDENT COMMUNITY TOOL · SAVE FILES NEVER LEAVE YOUR BROWSER': ['コミュニティ制作ツール · セーブデータはブラウザーの外に送信されません', '独立社区工具 · 存档不会离开浏览器', '獨立社群工具 · 存檔不會離開瀏覽器'],
   'DESIGNED FOR KEYBOARD, MOUSE & TOUCH': ['キーボード・マウス・タッチ操作に対応', '支持键盘、鼠标和触控操作', '支援鍵盤、滑鼠與觸控操作'],
-  'Edit overmasteries. Manage your bag.': ['オーバーマスタリーを編集し、所持品を整理。', '编辑角色强化属性，管理背包物品。', '編輯角色強化屬性，管理背包物品。'],
-  'Read a Relink save, adjust overmastery stats, add Sigils and Wrightstones, remove unassigned Sigils or inactive Wrightstones, or choose items by name from the catalog. Then download a verified copy.': ['Relinkのセーブデータを読み込み、オーバーマスタリーを調整したり、ジーンやウェールライトストーンを追加したり、未割り当てのジーンや無効状態のウェールライトストーンを削除したりできます。検証済みのコピーをダウンロードしてください。', '读取 Relink 存档，调整角色强化属性，添加因子与辉石，删除未分配的因子或未激活的辉石，也可从目录按名称选择物品。然后下载经过验证的副本。', '讀取 Relink 存檔，調整角色強化屬性，新增因子與輝石，刪除未指派的因子或未啟用的輝石，也可從目錄依名稱選擇物品。然後下載經過驗證的副本。'],
+  'Edit overmasteries. Set Mastery Points.': ['オーバーマスタリーを編集し、マスタリーポイントを設定。', '编辑角色强化属性，设置精通点数。', '編輯角色強化屬性，設定精通點數。'],
+  'Read a Relink save, adjust overmastery stats and Mastery Points, add Sigils and Wrightstones, remove unassigned Sigils or inactive Wrightstones, or choose items by name from the catalog. Then download a verified copy.': ['Relinkのセーブデータを読み込み、オーバーマスタリーやマスタリーポイントを調整したり、ジーンやウェールライトストーンを追加・削除したり、カタログからアイテムを選択したりできます。検証済みのコピーをダウンロードしてください。', '读取 Relink 存档，调整角色强化属性和精通点数，添加或移除因子与辉石，也可从目录按名称选择物品。然后下载经过验证的副本。', '讀取 Relink 存檔，調整角色強化屬性與精通點數，新增或移除因子與輝石，也可從目錄依名稱選擇物品。然後下載經過驗證的副本。'],
   'Files stay on this device': ['ファイルはこの端末内に保存されます', '文件保留在此设备上', '檔案會保留在此裝置上'],
   'Original save stays untouched': ['元のセーブデータは変更されません', '原始存档不会被修改', '原始存檔不會被修改'],
-  'Sigils and Wrightstones': ['ジーンとウェールライトストーン', '因子与辉石', '因子與輝石'],
+  'Mastery Points, Sigils and Wrightstones': ['マスタリーポイント、ジーン、ウェールライトストーン', '精通点数、因子与辉石', '精通點數、因子與輝石'],
   'Choose save file': ['セーブファイルを選択', '选择存档文件', '選擇存檔檔案'],
   'Choose or drop a save file': ['セーブファイルを選択またはドロップ', '选择或拖放存档文件', '選擇或拖放存檔檔案'],
   'Drop your save here': ['セーブをここにドロップ', '将存档拖放到此处', '將存檔拖放到此處'],
@@ -392,11 +406,15 @@ function translateDynamicText(text, language) {
   if (match) return [`· 所持品の変更 ${match[1]} 件`, `· 背包更改 ${match[1]} 项`, `· 背包變更 ${match[1]} 項`][index]
   match = text.match(/^(\d+) changes? queued$/)
   if (match) return [`${match[1]} 件の変更を保留中`, `已排队 ${match[1]} 项更改`, `已排隊 ${match[1]} 項變更`][index]
-  match = text.match(/^Downloaded (.+); checksum, (\d+) overmastery edits, (\d+) bag additions, and (\d+) bag removals verified\.$/)
+  match = text.match(/^Use a whole number from 0 to ([\d,]+)\.$/)
+  if (match) return [`0から${match[1]}までの整数を入力してください。`, `请输入 0 到 ${match[1]} 之间的整数。`, `請輸入 0 到 ${match[1]} 之間的整數。`][index]
+  match = text.match(/^Mastery Points must be a whole number from 0 to ([\d,]+)\.$/)
+  if (match) return [`マスタリーポイントは0から${match[1]}までの整数で入力してください。`, `精通点数必须是 0 到 ${match[1]} 之间的整数。`, `精通點數必須是 0 到 ${match[1]} 之間的整數。`][index]
+  match = text.match(/^Downloaded (.+); checksum, (\d+) overmastery edits, (\d+) bag additions, (\d+) bag removals, and (\d+) Mastery Points edits verified\.$/)
   if (match) return [
-    `${match[1]} をダウンロードしました。チェックサム、オーバーマスタリーの変更 ${match[2]} 件、所持品の追加 ${match[3]} 件、削除 ${match[4]} 件を検証しました。`,
-    `已下载 ${match[1]}。校验和、角色强化更改 ${match[2]} 项、背包新增 ${match[3]} 项及移除 ${match[4]} 项均已验证。`,
-    `已下載 ${match[1]}。檢查碼、角色強化變更 ${match[2]} 項、背包新增 ${match[3]} 項及移除 ${match[4]} 項均已驗證。`,
+    `${match[1]} をダウンロードしました。チェックサム、オーバーマスタリーの変更 ${match[2]} 件、所持品の追加 ${match[3]} 件と削除 ${match[4]} 件、マスタリーポイントの変更 ${match[5]} 件を検証しました。`,
+    `已下载 ${match[1]}。校验和、角色强化更改 ${match[2]} 项、背包新增 ${match[3]} 项及移除 ${match[4]} 项、精通点数更改 ${match[5]} 项均已验证。`,
+    `已下載 ${match[1]}。檢查碼、角色強化變更 ${match[2]} 項、背包新增 ${match[3]} 項及移除 ${match[4]} 項、精通點數變更 ${match[5]} 項均已驗證。`,
   ][index]
   match = text.match(/^The (sigil|wrightstone) slot counter or serial records are ambiguous, so this save cannot be edited safely\.$/)
   if (match) return [`${match[1] === 'sigil' ? 'ジーン' : 'ウェールライトストーン'}のスロット数またはシリアル記録が不明確なため、このセーブは安全に編集できません。`, `由于${match[1] === 'sigil' ? '因子' : '辉石'}槽位计数器或序列号记录不明确，无法安全编辑此存档。`, `由於${match[1] === 'sigil' ? '因子' : '輝石'}欄位計數器或序號紀錄不明確，無法安全編輯此存檔。`][index]

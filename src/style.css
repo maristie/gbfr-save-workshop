@@ -177,6 +177,16 @@ code { font: .68rem var(--mono); color:#adc6c7; }
 .inventory-intro > p { max-width:540px; margin:0; color:#82929a; font-size:.68rem; line-height:1.65; }
 .inventory-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start; }
 .inventory-card, .queue-panel { min-width:0; padding:17px 16px 15px; border:1px solid var(--line); border-radius:8px; background:rgba(24,35,46,.8); }
+.mastery-points-workspace { min-height:370px; }
+.mastery-points-card { max-width:620px; }
+.mastery-points-card .inventory-capacity { display:flex; flex-direction:column; gap:4px; }
+.inventory-capacity strong { color:#c9e4dc; font:500 .78rem var(--mono); }
+.mastery-points-form { display:flex; align-items:flex-end; gap:10px; max-width:440px; }
+.mastery-points-form .raw-field { flex:1; }
+.mastery-points-form input { height:38px; }
+.mastery-points-form .raw-submit { min-height:38px; }
+.mastery-points-pending { display:flex; justify-content:space-between; gap:12px; max-width:440px; margin:13px 0 0; padding-top:11px; border-top:1px solid rgba(194,216,226,.08); color:#879a9e; font-size:.64rem; }
+.mastery-points-pending strong { color:var(--gold); font:500 .67rem var(--mono); }
 .inventory-card-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .inventory-card-heading .eyebrow { font-size:.53rem; }
 .inventory-card-heading h3, .queue-panel h3 { margin:5px 0 0; color:#e2ebeb; font:500 1.03rem var(--display); }
@@ -294,6 +304,8 @@ code { font: .68rem var(--mono); color:#adc6c7; }
   .inventory-intro h2 { font-size:1.35rem; }
   .inventory-intro > p { font-size:.63rem; }
   .inventory-card, .queue-panel { padding:13px 11px 12px; }
+  .mastery-points-form { align-items:stretch; flex-direction:column; }
+  .mastery-points-form .raw-submit { align-self:flex-start; }
   .inventory-capacity { max-width:130px; font-size:.47rem; }
   .inventory-list { max-height:330px; }
   .inventory-row { gap:6px; padding:7px 6px; }

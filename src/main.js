@@ -1,5 +1,6 @@
 import {
   OVERMASTERY_STATS,
+  MAX_MASTER_POINTS,
   changesForSave,
   checksumDisplay,
   createEditedSave,
@@ -36,6 +37,7 @@ const state = {
   notice: '',
   filter: '',
   activeTab: 'overmastery',
+  masterPointsDraft: null,
   inventoryAdds: [],
   inventoryRemovals: [],
   inventoryFilter: { sigil: '', wrightstone: '' },
@@ -110,6 +112,12 @@ function selectedCharacter() {
 function currentChanges() {
   if (!state.parsed) return []
   return changesForSave(state.parsed.characters)
+}
+
+function masterPointsChange() {
+  const field = state.parsed?.masterPoints
+  if (!field?.editable || state.masterPointsDraft === null || state.masterPointsDraft === field.value) return null
+  return state.masterPointsDraft
 }
 
 function statOptions(slot) {
@@ -189,12 +197,12 @@ function renderUpload() {
   return `<section class="welcome-grid">
     <div class="welcome-copy">
       <p class="eyebrow"><span class="pulse-dot"></span> SAVE FILE EDITOR <span class="eyebrow-divider">/</span> SAVE WORKSHOP</p>
-      <h1>Edit overmasteries. Manage your bag.</h1>
-      <p class="welcome-text">Read a Relink save, adjust overmastery stats, add Sigils and Wrightstones, remove unassigned Sigils or inactive Wrightstones, or choose items by name from the catalog. Then download a verified copy.</p>
+      <h1>Edit overmasteries. Set Mastery Points.</h1>
+      <p class="welcome-text">Read a Relink save, adjust overmastery stats and Mastery Points, add Sigils and Wrightstones, remove unassigned Sigils or inactive Wrightstones, or choose items by name from the catalog. Then download a verified copy.</p>
       <div class="trust-points">
         <span><i>01</i> Files stay on this device</span>
         <span><i>02</i> Original save stays untouched</span>
-        <span><i>03</i> Sigils and Wrightstones</span>
+        <span><i>03</i> Mastery Points, Sigils and Wrightstones</span>
       </div>
       <button class="primary-button welcome-button" data-action="open-file" type="button"><span class="button-icon">↑</span> Choose save file</button>
     </div>
@@ -447,13 +455,38 @@ function renderInventoryPanel() {
   </section>`
 }
 
+function renderMasterPointsPanel() {
+  const field = state.parsed.masterPoints
+  const checksumValid = state.parsed.checksumValid
+  const draft = state.masterPointsDraft ?? field.value
+  const currentValue = field.value === null ? 'Unavailable' : field.value.toLocaleString(state.language === 'ja' ? 'ja-JP' : state.language === 'zh-CN' ? 'zh-CN' : state.language === 'zh-TW' ? 'zh-TW' : 'en-US')
+  const changed = masterPointsChange() !== null
+  const disabled = !field.editable || !checksumValid
+  return `<section class="inventory-workspace mastery-points-workspace">
+    <div class="inventory-intro"><div><p class="eyebrow">PROGRESSION</p><h2>Set your Mastery Points.</h2></div><p>Choose the balance to keep in your save. The editor verifies the value before downloading the edited copy.</p></div>
+    <div class="mastery-points-card inventory-card">
+      <div class="inventory-card-heading"><div><p class="eyebrow">PROFILE BALANCE</p><h3>Mastery Points</h3></div><div class="inventory-capacity"><span>CURRENT BALANCE</span><strong>${escapeHTML(currentValue)}</strong></div></div>
+      <p class="inventory-help">Use a whole number from 0 to ${MAX_MASTER_POINTS.toLocaleString('en-US')}.</p>
+      <form id="master-points-form" class="mastery-points-form">
+        <label class="raw-field" for="master-points-input">NEW AMOUNT
+          <input id="master-points-input" name="master-points" type="number" min="0" max="${MAX_MASTER_POINTS}" step="1" inputmode="numeric" value="${draft === null ? '' : escapeHTML(draft)}" ${disabled ? 'disabled' : ''} required />
+        </label>
+        <button class="primary-button raw-submit" type="submit" ${disabled ? 'disabled' : ''}>Apply amount</button>
+      </form>
+      ${changed ? `<p class="mastery-points-pending"><span>Pending amount</span><strong>${escapeHTML(Number(draft).toLocaleString(state.language === 'ja' ? 'ja-JP' : state.language === 'zh-CN' ? 'zh-CN' : state.language === 'zh-TW' ? 'zh-TW' : 'en-US'))}</strong></p>` : ''}
+      ${!field.editable ? '<div class="alert alert-warning"><strong>Mastery Points are read-only in this save.</strong> The value field is missing, duplicated, or incomplete.</div>' : ''}
+    </div>
+  </section>`
+}
+
 function renderLoaded() {
   const { rows, count } = characterList()
   const changes = (() => { try { return currentChanges() } catch { return [] } })()
   const character = selectedCharacter()
   const checksumValid = state.parsed.checksumValid
   const queued = inventoryChangeCount()
-  const hasPending = changes.length > 0 || queued > 0
+  const pointsChange = masterPointsChange()
+  const hasPending = changes.length > 0 || queued > 0 || pointsChange !== null
   const canDownload = hasPending && checksumValid
   const slotsMarkup = character ? character.slots.map((slot) => {
     const value = slotValue(slot)
@@ -499,8 +532,9 @@ function renderLoaded() {
     <div class="tool-tabs" role="tablist" aria-label="Save editor tools">
       <button class="tool-tab${state.activeTab === 'overmastery' ? ' is-active' : ''}" role="tab" aria-selected="${state.activeTab === 'overmastery'}" data-action="switch-tab" data-tab="overmastery" type="button">Overmastery</button>
       <button class="tool-tab${state.activeTab === 'inventory' ? ' is-active' : ''}" role="tab" aria-selected="${state.activeTab === 'inventory'}" data-action="switch-tab" data-tab="inventory" type="button">Bag items <span>${queued}</span></button>
+      <button class="tool-tab${state.activeTab === 'master-points' ? ' is-active' : ''}" role="tab" aria-selected="${state.activeTab === 'master-points'}" data-action="switch-tab" data-tab="master-points" type="button">Mastery Points${pointsChange !== null ? '<span>1</span>' : ''}</button>
     </div>
-    ${state.activeTab === 'inventory' ? renderInventoryPanel() : `<div class="editor-layout">
+    ${state.activeTab === 'inventory' ? renderInventoryPanel() : state.activeTab === 'master-points' ? renderMasterPointsPanel() : `<div class="editor-layout">
       <aside class="character-panel">
         <div class="panel-heading"><div><p class="eyebrow">CHARACTER ROSTER</p><h2>Characters</h2></div><span class="count-badge">${count}</span></div>
         <label class="search-box"><span>⌕</span><input id="character-search" type="search" placeholder="Find a character" value="${escapeHTML(state.filter)}" autocomplete="off" /></label>
@@ -518,7 +552,7 @@ function renderLoaded() {
       </section>
     </div>`}
     <div class="edit-footer workspace-footer">
-      <div class="edit-feedback" aria-live="polite">${state.notice ? `<span class="feedback-check">✓</span>${escapeHTML(state.notice)}` : `<span class="feedback-dot"></span><span>${changes.length ? `${changes.length} overmastery slot${changes.length === 1 ? '' : 's'}` : 'No overmastery edits'}</span>${queued ? `<span>· ${queued} bag change${queued === 1 ? '' : 's'}</span>` : ''}`}</div>
+      <div class="edit-feedback" aria-live="polite">${state.notice ? `<span class="feedback-check">✓</span>${escapeHTML(state.notice)}` : `<span class="feedback-dot"></span><span>${changes.length ? `${changes.length} overmastery slot${changes.length === 1 ? '' : 's'}` : 'No overmastery edits'}</span>${pointsChange !== null ? `<span>· ${escapeHTML(localizeText('Mastery Points', state.language))}: ${escapeHTML(Number(state.parsed.masterPoints.value).toLocaleString())} → ${escapeHTML(Number(pointsChange).toLocaleString())}</span>` : ''}${queued ? `<span>· ${queued} bag change${queued === 1 ? '' : 's'}</span>` : ''}`}</div>
       <div class="edit-actions"><button class="subtle-button" data-action="reset" type="button" ${hasPending ? '' : 'disabled'}>Reset edits</button><button class="primary-button download-button" data-action="download" type="button" ${canDownload ? '' : 'disabled'}>${downloadLabel}</button></div>
     </div>
     <div class="workspace-note"><span>⟲</span> Export creates a new file. Keep your original save as a backup until the game loads the edited copy.</div>
@@ -572,6 +606,7 @@ function bindEvents() {
     saveLanguage(state.language)
     render()
   })
+  app.querySelector('#master-points-form')?.addEventListener('submit', applyMasterPoints)
   input?.addEventListener('change', async () => {
     const file = input.files?.[0]
     if (file) await loadFile(file)
@@ -811,6 +846,7 @@ function resetEdits() {
   }
   state.inventoryAdds = []
   state.inventoryRemovals = []
+  state.masterPointsDraft = null
   state.error = ''
   state.notice = 'All edits reset.'
   render()
@@ -825,6 +861,7 @@ async function loadFile(file) {
     state.fileName = file.name
     state.bytes = bytes
     state.parsed = parsed
+    state.masterPointsDraft = null
     state.selectedUnitId = parsed.characters[0]?.unitId ?? null
     state.filter = ''
     state.activeTab = 'overmastery'
@@ -839,6 +876,7 @@ async function loadFile(file) {
     state.fileName = ''
     state.bytes = null
     state.parsed = null
+    state.masterPointsDraft = null
     state.selectedUnitId = null
     state.inventoryAdds = []
     state.inventoryRemovals = []
@@ -846,10 +884,34 @@ async function loadFile(file) {
   render()
 }
 
+function applyMasterPoints(event) {
+  event.preventDefault()
+  try {
+    const field = state.parsed?.masterPoints
+    if (!field?.editable) throw new Error('The Mastery Points field is missing or ambiguous in this save.')
+    if (!state.parsed.checksumValid) throw new Error('The input save checksum is invalid; editing is disabled for safety.')
+    const text = app.querySelector('#master-points-input')?.value.trim() ?? ''
+    if (!/^\d+$/.test(text)) throw new Error(`Mastery Points must be a whole number from 0 to ${MAX_MASTER_POINTS.toLocaleString('en-US')}.`)
+    const value = Number(text)
+    if (!Number.isSafeInteger(value)) throw new Error('Mastery Points amount is too large.')
+    if (value !== field.value && (value < 0 || value > MAX_MASTER_POINTS)) {
+      throw new Error(`Mastery Points must be a whole number from 0 to ${MAX_MASTER_POINTS.toLocaleString('en-US')}.`)
+    }
+    state.masterPointsDraft = value === field.value ? null : value
+    state.error = ''
+    state.notice = state.masterPointsDraft === null ? 'Mastery Points amount unchanged.' : 'Mastery Points change queued.'
+  } catch (error) {
+    state.error = error instanceof Error ? error.message : String(error)
+    state.notice = ''
+  }
+  render()
+}
+
 function downloadEditedSave() {
   try {
     const changes = currentChanges()
-    const output = createEditedSave(state.bytes, state.parsed, changes, state.inventoryAdds, state.inventoryRemovals)
+    const pointsChange = masterPointsChange()
+    const output = createEditedSave(state.bytes, state.parsed, changes, state.inventoryAdds, state.inventoryRemovals, pointsChange)
     const blob = new Blob([output], { type: 'application/octet-stream' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -863,7 +925,8 @@ function downloadEditedSave() {
     const additionCount = state.inventoryAdds.length
     const removalCount = state.inventoryRemovals.length
     const overmasteryCount = changes.length
-    state.notice = `Downloaded ${link.download}; checksum, ${overmasteryCount} overmastery edits, ${additionCount} bag additions, and ${removalCount} bag removals verified.`
+    const masterPointsCount = pointsChange === null ? 0 : 1
+    state.notice = `Downloaded ${link.download}; checksum, ${overmasteryCount} overmastery edits, ${additionCount} bag additions, ${removalCount} bag removals, and ${masterPointsCount} Mastery Points edits verified.`
   } catch (error) {
     state.error = error instanceof Error ? error.message : String(error)
     state.notice = ''

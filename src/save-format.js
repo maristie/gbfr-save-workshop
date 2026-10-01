@@ -3,6 +3,9 @@ const HASH_SEED_ID_TYPE = 1003
 const CHARACTER_ID_TYPE = 1301
 const OVERMASTERY_ATTRIBUTE_ID_TYPE = 1606
 const OVERMASTERY_LEVEL_ID_TYPE = 1607
+const MASTER_POINTS_ID_TYPE = 1112
+const MASTER_POINTS_UNIT_ID = 0
+export const MAX_MASTER_POINTS = 9_999_999
 const FIRST_CHARACTER_UNIT_ID = 10000
 const LAST_CHARACTER_UNIT_ID = 20000
 const SLOT_BASE = 10000000
@@ -342,6 +345,17 @@ export function parseSave(bytes) {
   const uintUnits = parseUnitTable(view, slotOffset, slotLength, rootPosition, 7, false, 'Unsigned save data')
   const intUnits = parseUnitTable(view, slotOffset, slotLength, rootPosition, 6, true, 'Signed save data')
   const boolUnits = parseUnitTable(view, slotOffset, slotLength, rootPosition, 1, false, 'Boolean save data', 1)
+  const masterPointRecords = intUnits.filter((unit) => (
+    unit.idType === MASTER_POINTS_ID_TYPE && unit.unitId === MASTER_POINTS_UNIT_ID
+  ))
+  const masterPointRecord = masterPointRecords.length === 1 && masterPointRecords[0].valueCount === 1
+    ? masterPointRecords[0]
+    : null
+  const masterPoints = {
+    editable: Boolean(masterPointRecord),
+    value: masterPointRecord?.firstValue ?? null,
+    offset: masterPointRecord?.firstValueOffset ?? null,
+  }
 
   const characterUnits = uintUnits.filter((unit) => (
     unit.idType === CHARACTER_ID_TYPE &&
@@ -440,6 +454,7 @@ export function parseSave(bytes) {
     checksumStart: slotOffset + sectionStart,
     checksumEnd: slotOffset + checksumEnd,
     checksumValid,
+    masterPoints,
     inventory,
     characters,
   }
@@ -715,9 +730,15 @@ function verifyInventoryPlan(inventory, expected, cleared) {
   }
 }
 
-export function createEditedSave(bytes, parsed, changes, inventoryAdds = [], inventoryRemovals = []) {
+export function createEditedSave(bytes, parsed, changes, inventoryAdds = [], inventoryRemovals = [], masterPointsValue = null) {
   if (!parsed.checksumValid) fail('The input save checksum is invalid; editing is disabled for safety.')
-  if (!changes.length && !inventoryAdds.length && !inventoryRemovals.length) fail('There are no changes to download.')
+  if (!changes.length && !inventoryAdds.length && !inventoryRemovals.length && masterPointsValue === null) fail('There are no changes to download.')
+  if (masterPointsValue !== null) {
+    if (!parsed.masterPoints?.editable || parsed.masterPoints.offset === null) fail('The Mastery Points field is missing or ambiguous in this save.')
+    if (!Number.isInteger(masterPointsValue) || masterPointsValue < 0 || masterPointsValue > MAX_MASTER_POINTS) {
+      fail(`Mastery Points must be a whole number from 0 to ${MAX_MASTER_POINTS.toLocaleString('en-US')}.`)
+    }
+  }
   const inventoryPlan = planInventoryChanges(parsed, inventoryAdds, inventoryRemovals)
   const output = new Uint8Array(bytes)
   const view = new DataView(output.buffer, output.byteOffset, output.byteLength)
@@ -725,6 +746,9 @@ export function createEditedSave(bytes, parsed, changes, inventoryAdds = [], inv
   for (const change of changes) {
     view.setUint32(change.slot.attributeOffset, change.hash, true)
     view.setInt32(change.slot.levelOffset, change.levelBit, true)
+  }
+  if (masterPointsValue !== null && masterPointsValue !== parsed.masterPoints.value) {
+    view.setInt32(parsed.masterPoints.offset, masterPointsValue, true)
   }
   for (const patch of inventoryPlan.patches) {
     if (patch.type === 'int32') view.setInt32(patch.offset, patch.value, true)
@@ -745,6 +769,9 @@ export function createEditedSave(bytes, parsed, changes, inventoryAdds = [], inv
     if (!slot || slot.originalHash !== change.hash || slot.originalLevelBit !== change.levelBit) {
       fail(`Read-back verification failed for ${change.character.name}, slot ${change.slot.index + 1}.`)
     }
+  }
+  if (masterPointsValue !== null && reparsed.masterPoints.value !== masterPointsValue) {
+    fail('Read-back verification failed for Mastery Points.')
   }
   verifyInventoryPlan(reparsed.inventory, inventoryPlan.expected, inventoryPlan.cleared)
   return output
