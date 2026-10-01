@@ -24,6 +24,8 @@ import {
   localizeCharacter,
   localizeDOM,
   localizeInventoryTerm,
+  localizeMaterialItem,
+  allMaterialItemNames,
   localizeText,
   normalizeLanguage,
   saveLanguage,
@@ -77,12 +79,14 @@ function traitForHash(hash) {
 
 function traitLabel(hash) {
   const trait = traitForHash(hash)
-  return trait ? localizeInventoryTerm(trait.name, 'trait', state.language) : localizeText('Uncatalogued trait', state.language)
+  return trait
+    ? localizeInventoryTerm(trait.name, 'trait', state.language)
+    : `${localizeText('Uncatalogued trait', state.language)}（${hashToText(hash)}）`
 }
 
 function itemLabel(kind, hash) {
   const item = itemForHash(kind, hash)
-  if (!item) return localizeText(`Uncatalogued ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'}`, state.language)
+  if (!item) return `${localizeText(`Uncatalogued ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'}`, state.language)}（${hashToText(hash)}）`
   const name = localizeInventoryTerm(item.name, kind, state.language)
   if (kind === 'sigil' && duplicateSigilNames.has(item.name)) {
     const secondary = localizeText(item.fixedSecondary ? 'fixed secondary' : 'selectable secondary', state.language)
@@ -97,7 +101,9 @@ function materialItemForHash(hash) {
 
 function materialItemLabel(hash) {
   const item = materialItemForHash(hash)
-  return item?.name ?? `Uncatalogued item (${hashToText(hash)})`
+  return item
+    ? localizeMaterialItem(item.name, state.language)
+    : `${localizeText('Uncatalogued item', state.language)}（${hashToText(hash)}）`
 }
 
 function traitOptions(traits, includeEmpty = false, selectedHash = '') {
@@ -118,7 +124,11 @@ function primaryTraitFor(item) {
 }
 
 function selectedCharacter() {
-  return state.parsed?.characters.find((character) => character.unitId === state.selectedUnitId) ?? null
+  return state.parsed?.characters.find((character) => character.supported && character.unitId === state.selectedUnitId) ?? null
+}
+
+function supportedCharacters() {
+  return state.parsed?.characters.filter((character) => character.supported) ?? []
 }
 
 function currentChanges() {
@@ -195,7 +205,7 @@ function slotChanged(slot) {
 }
 
 function characterList() {
-  const characters = state.parsed?.characters ?? []
+  const characters = supportedCharacters()
   const filtered = characters.filter((character) => `${characterSearchNames(character.name).join(' ')} ${character.hashText}`.toLowerCase().includes(state.filter.toLowerCase()))
   const rows = filtered.map((character) => {
     const available = character.slots.filter((slot) => slot.editable).length
@@ -209,7 +219,11 @@ function characterList() {
       <span class="row-chevron" aria-hidden="true">›</span>
     </button>`
   }).join('')
-  return { rows, count: filtered.length }
+  return {
+    rows,
+    count: filtered.length,
+    emptyMessage: characters.length === 0 && !state.filter ? 'No supported characters found.' : 'No matching characters.',
+  }
 }
 
 function renderUpload() {
@@ -340,7 +354,11 @@ function renderItemStacks() {
   const search = state.inventoryFilter.items.trim().toLowerCase()
   const matched = search ? active.filter((row) => {
     const item = materialItemForHash(row.hash)
-    return [item?.name, item?.id, row.hashText, row.unitId].filter(Boolean).join(' ').toLowerCase().includes(search)
+    return [...(item ? allMaterialItemNames(item.name, state.language) : []), item?.id, row.hashText, row.unitId]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .includes(search)
   }) : active
   const shown = matched.slice(0, 100)
   const locale = state.language === 'ja' ? 'ja-JP' : state.language === 'zh-CN' ? 'zh-CN' : state.language === 'zh-TW' ? 'zh-TW' : 'en-US'
@@ -353,7 +371,8 @@ function renderItemStacks() {
     const disabled = !row.editable || !state.parsed.checksumValid
     const current = row.quantity === null ? localizeText('Unavailable', state.language) : row.quantity.toLocaleString(locale)
     const pending = hasDraft ? ` · ${localizeText('New amount', state.language)} ${Number(quantity).toLocaleString(locale)}` : ''
-    const searchText = escapeHTML([label, itemCode, row.hashText, row.unitId].join(' ').toLowerCase())
+    const searchNames = item ? allMaterialItemNames(item.name, state.language) : [label]
+    const searchText = escapeHTML([...searchNames, label, itemCode, row.hashText, row.unitId].join(' ').toLowerCase())
     return `<article class="inventory-row item-quantity-row" data-inventory-row data-search="${searchText}">
       <div class="inventory-item-copy"><strong>${escapeHTML(label)}</strong><small>${escapeHTML(itemCode)} · ${escapeHTML(localizeText('Unit', state.language))} ${row.unitId}</small><span>${escapeHTML(localizeText('Current amount', state.language))}: ${escapeHTML(current)}${escapeHTML(pending)}</span>${row.editable ? '' : `<small>${escapeHTML(localizeText('Read-only: item or quantity fields are incomplete or ambiguous.', state.language))}</small>`}</div>
       <form class="item-quantity-form" data-role="item-quantity-form" data-unit-id="${row.unitId}">
@@ -550,7 +569,7 @@ function renderMasterPointsPanel() {
 }
 
 function renderLoaded() {
-  const { rows, count } = characterList()
+  const { rows, count, emptyMessage } = characterList()
   const changes = (() => { try { return currentChanges() } catch { return [] } })()
   const character = selectedCharacter()
   const checksumValid = state.parsed.checksumValid
@@ -594,7 +613,7 @@ function renderLoaded() {
   return `<section class="workspace">
     <div class="file-banner">
       <div class="file-icon"><span></span><span></span></div>
-      <div class="file-details"><small>LOADED SAVE</small><strong>${escapeHTML(state.fileName)}</strong><span>${formatBytes(state.bytes.byteLength)} <b>·</b> Save data v${state.parsed.version ?? '—'} <b>·</b> ${state.parsed.characters.length} characters</span></div>
+      <div class="file-details"><small>LOADED SAVE</small><strong>${escapeHTML(state.fileName)}</strong><span>${formatBytes(state.bytes.byteLength)} <b>·</b> Save data v${state.parsed.version ?? '—'} <b>·</b> ${supportedCharacters().length} characters</span></div>
       <div class="checksum-state ${checksumValid ? 'is-good' : 'is-bad'}"><span class="state-dot"></span><span>${checksumValid ? 'Checksum verified' : 'Checksum mismatch'}</span><code>${checksumDisplay(new DataView(state.bytes.buffer), state.parsed)}</code></div>
       <button class="subtle-button" data-action="open-file" type="button">Open another</button>
     </div>
@@ -608,7 +627,7 @@ function renderLoaded() {
       <aside class="character-panel">
         <div class="panel-heading"><div><p class="eyebrow">CHARACTER ROSTER</p><h2>Characters</h2></div><span class="count-badge">${count}</span></div>
         <label class="search-box"><span>⌕</span><input id="character-search" type="search" placeholder="Find a character" value="${escapeHTML(state.filter)}" autocomplete="off" /></label>
-        <div class="character-list" id="character-list">${rows}<div class="empty-search" ${rows ? 'hidden' : ''}>No matching characters.</div></div>
+        <div class="character-list" id="character-list">${rows}<div class="empty-search" ${rows ? 'hidden' : ''}>${emptyMessage}</div></div>
         <div class="roster-foot"><span class="roster-symbol">◈</span> Select a character to edit their save slots.</div>
       </aside>
       <section class="edit-panel">
@@ -973,7 +992,7 @@ async function loadFile(file) {
     state.parsed = parsed
     state.masterPointsDraft = null
     state.itemQuantityDrafts = {}
-    state.selectedUnitId = parsed.characters[0]?.unitId ?? null
+    state.selectedUnitId = parsed.characters.find((character) => character.supported)?.unitId ?? null
     state.filter = ''
     state.activeTab = 'overmastery'
     state.inventoryAdds = []

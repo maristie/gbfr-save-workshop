@@ -1,4 +1,5 @@
 import { INVENTORY_TERMS } from './inventory-terms.js'
+import { MATERIAL_ITEM_TERMS } from './material-terms.js'
 
 export const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English', htmlLang: 'en' },
@@ -25,7 +26,7 @@ const UI_TRANSLATIONS = {
   'Edit bag items.': ['所持品を編集。', '编辑背包物品。', '編輯背包物品。'],
   'STACKABLE ITEMS': ['スタック可能アイテム', '可堆叠物品', '可堆疊物品'],
   'Items and materials': ['アイテムと素材', '物品与素材', '物品與素材'],
-  'Set quantities for stackable items, or add and remove Sigils and Wrightstones. The editor checks each changed record and the save checksum before download.': ['スタック可能なアイテムの数量を設定したり、ジーンやウェールライトストーンを追加・削除したりできます。ダウンロード前に変更レコードとセーブのチェックサムを検証します。', '设置可堆叠物品的数量，或添加、移除因子与辉石。下载前会检查每条更改记录和存档校验和。', '設定可堆疊物品的數量，或新增、移除因子與輝石。下載前會檢查每筆變更紀錄與存檔檢查碼。'],
+  'Set quantities for stackable items, or add and remove Sigils and Wrightstones. The editor checks each changed record and the save checksum before download.': ['スタック可能なアイテムの数量を設定したり、ジーンや加護を追加・削除したりできます。ダウンロード前に変更レコードとセーブのチェックサムを検証します。', '设置可堆叠物品的数量，或添加、移除因子与辉石。下载前会检查每条更改记录和存档校验和。', '設定可堆疊物品的數量，或新增、移除因子與輝石。下載前會檢查每筆變更紀錄與存檔檢查碼。'],
   'Set quantities for existing materials, currency, consumables, and other stackable items. Only stacks already active in the save can be edited. The save field accepts 0–2,147,483,647.': ['所持している素材、通貨、消耗品などの数量を設定できます。セーブデータですでに有効なスタックのみ編集できます。保存フィールドは0～2,147,483,647に対応します。', '设置已有素材、货币、消耗品和其他可堆叠物品的数量。只能编辑存档中已启用的堆叠。存档字段范围为 0–2,147,483,647。', '設定已有素材、貨幣、消耗品與其他可堆疊物品的數量。只能編輯存檔中已啟用的堆疊。存檔欄位範圍為 0–2,147,483,647。'],
   'Search item names, IDs, hashes, or slot': ['アイテム名、ID、ハッシュ、スロットを検索', '搜索物品名称、ID、哈希或槽位', '搜尋物品名稱、ID、雜湊或欄位'],
   'Current amount': ['現在の数量', '当前数量', '目前數量'],
@@ -57,11 +58,11 @@ const UI_TRANSLATIONS = {
   'INDEPENDENT COMMUNITY TOOL · SAVE FILES NEVER LEAVE YOUR BROWSER': ['コミュニティ制作ツール · セーブデータはブラウザーの外に送信されません', '独立社区工具 · 存档不会离开浏览器', '獨立社群工具 · 存檔不會離開瀏覽器'],
   'DESIGNED FOR KEYBOARD, MOUSE & TOUCH': ['キーボード・マウス・タッチ操作に対応', '支持键盘、鼠标和触控操作', '支援鍵盤、滑鼠與觸控操作'],
   'Edit overmasteries. Set Mastery Points.': ['オーバーマスタリーを編集し、マスタリーポイントを設定。', '编辑角色强化属性，设置精通点数。', '編輯角色強化屬性，設定精通點數。'],
-  'Read a Relink save, adjust overmastery stats and Mastery Points, edit existing stackable item quantities, add Sigils and Wrightstones, or choose equipment from the catalog. Then download a verified copy.': ['Relinkのセーブデータを読み込み、オーバーマスタリーやマスタリーポイント、所持アイテムの数量を調整し、ジーンやウェールライトストーンを追加・削除できます。検証済みのコピーをダウンロードしてください。', '读取 Relink 存档，调整角色强化属性、精通点数和已有物品数量，添加或移除因子与辉石。然后下载经过验证的副本。', '讀取 Relink 存檔，調整角色強化屬性、精通點數與已有物品數量，新增或移除因子與輝石。然後下載經過驗證的副本。'],
-  'Read a Relink save, adjust overmastery stats and Mastery Points, add Sigils and Wrightstones, remove unassigned Sigils or inactive Wrightstones, or choose items by name from the catalog. Then download a verified copy.': ['Relinkのセーブデータを読み込み、オーバーマスタリーやマスタリーポイントを調整したり、ジーンやウェールライトストーンを追加・削除したり、カタログからアイテムを選択したりできます。検証済みのコピーをダウンロードしてください。', '读取 Relink 存档，调整角色强化属性和精通点数，添加或移除因子与辉石，也可从目录按名称选择物品。然后下载经过验证的副本。', '讀取 Relink 存檔，調整角色強化屬性與精通點數，新增或移除因子與輝石，也可從目錄依名稱選擇物品。然後下載經過驗證的副本。'],
+  'Read a Relink save, adjust overmastery stats and Mastery Points, edit existing stackable item quantities, add Sigils and Wrightstones, or choose equipment from the catalog. Then download a verified copy.': ['Relinkのセーブデータを読み込み、オーバーマスタリーやマスタリーポイント、所持アイテムの数量を調整し、ジーンや加護を追加・削除できます。検証済みのコピーをダウンロードしてください。', '读取 Relink 存档，调整角色强化属性、精通点数和已有物品数量，添加或移除因子与辉石。然后下载经过验证的副本。', '讀取 Relink 存檔，調整角色強化屬性、精通點數與已有物品數量，新增或移除因子與輝石。然後下載經過驗證的副本。'],
+  'Read a Relink save, adjust overmastery stats and Mastery Points, add Sigils and Wrightstones, remove unassigned Sigils or inactive Wrightstones, or choose items by name from the catalog. Then download a verified copy.': ['Relinkのセーブデータを読み込み、オーバーマスタリーやマスタリーポイントを調整したり、ジーンや加護を追加・削除したり、カタログからアイテムを選択したりできます。検証済みのコピーをダウンロードしてください。', '读取 Relink 存档，调整角色强化属性和精通点数，添加或移除因子与辉石，也可从目录按名称选择物品。然后下载经过验证的副本。', '讀取 Relink 存檔，調整角色強化屬性與精通點數，新增或移除因子與輝石，也可從目錄依名稱選擇物品。然後下載經過驗證的副本。'],
   'Files stay on this device': ['ファイルはこの端末内に保存されます', '文件保留在此设备上', '檔案會保留在此裝置上'],
   'Original save stays untouched': ['元のセーブデータは変更されません', '原始存档不会被修改', '原始存檔不會被修改'],
-  'Mastery Points, Sigils and Wrightstones': ['マスタリーポイント、ジーン、ウェールライトストーン', '精通点数、因子与辉石', '精通點數、因子與輝石'],
+  'Mastery Points, Sigils and Wrightstones': ['マスタリーポイント、ジーン、加護', '精通点数、因子与辉石', '精通點數、因子與輝石'],
   'Choose save file': ['セーブファイルを選択', '选择存档文件', '選擇存檔檔案'],
   'Choose or drop a save file': ['セーブファイルを選択またはドロップ', '选择或拖放存档文件', '選擇或拖放存檔檔案'],
   'Drop your save here': ['セーブをここにドロップ', '将存档拖放到此处', '將存檔拖放到此處'],
@@ -73,7 +74,7 @@ const UI_TRANSLATIONS = {
   'Save format reference': ['セーブ形式の資料', '存档格式参考', '存檔格式參考'],
   'Save format reference ↗': ['セーブ形式の資料 ↗', '存档格式参考 ↗', '存檔格式參考 ↗'],
   'Sigils': ['ジーン', '因子', '因子'],
-  'Wrightstones': ['ウェールライトストーン', '辉石', '輝石'],
+  'Wrightstones': ['加護', '辉石', '輝石'],
   'Search item names, traits, or slot ID': ['アイテム名、特性、スロットIDを検索', '搜索物品名称、词条或槽位 ID', '搜尋物品名稱、詞條或欄位 ID'],
   'Create from item catalog': ['アイテムカタログから作成', '从物品目录创建', '從物品目錄建立'],
   'Select named items and traits. Their save hashes are filled in automatically. Trait combinations are not checked for in-game legality.': ['アイテムと特性を選択すると、セーブデータ用のハッシュが自動入力されます。特性の組み合わせがゲーム内で有効かは検証されません。', '选择物品和词条后会自动填入存档哈希。不会检查词条组合在游戏中是否合法。', '選擇物品與詞條後會自動填入存檔雜湊值。不會檢查詞條組合在遊戲中是否合法。'],
@@ -86,7 +87,7 @@ const UI_TRANSLATIONS = {
   'No additional trait': ['追加特性なし', '无额外词条', '無額外詞條'],
   'Optional': ['任意', '选填', '選填'],
   'SIGIL TYPE': ['ジーンの種類', '因子类型', '因子類型'],
-  'WRIGHTSTONE TYPE': ['ウェールライトストーンの種類', '辉石类型', '輝石類型'],
+  'WRIGHTSTONE TYPE': ['加護の種類', '辉石类型', '輝石類型'],
   QUANTITY: ['個数', '数量', '數量'],
   'SIGIL LEVEL': ['ジーンレベル', '因子等级', '因子等級'],
   'PRIMARY TRAIT': ['主特性', '主词条', '主詞條'],
@@ -96,12 +97,12 @@ const UI_TRANSLATIONS = {
   'LEVEL 2': ['レベル 2', '等级 2', '等級 2'],
   'LEVEL 3': ['レベル 3', '等级 3', '等級 3'],
   'Add Sigil': ['ジーンを追加', '添加因子', '新增因子'],
-  'Add Wrightstone': ['ウェールライトストーンを追加', '添加辉石', '新增輝石'],
+  'Add Wrightstone': ['加護を追加', '添加辉石', '新增輝石'],
   'BAG INVENTORY': ['所持品', '背包物品', '背包物品'],
-  'Add Sigils and Wrightstones.': ['ジーンとウェールライトストーンを追加。', '添加因子与辉石。', '新增因子與輝石。'],
-  'Edit Sigils and Wrightstones.': ['ジーンとウェールライトストーンを編集。', '编辑因子与辉石。', '編輯因子與輝石。'],
-  'Copy an entry, remove an unassigned Sigil or inactive Wrightstone, or choose one by name from the catalog. Hashes are filled in for you. Export verifies the changed records and checksum before download.': ['所持品を複製するか、未割り当てのジーンまたは無効状態のウェールライトストーンを削除するか、カタログから選択できます。ハッシュは自動入力され、ダウンロード前に変更レコードとチェックサムを検証します。', '复制已有物品、移除未分配的因子或未激活的辉石，或从目录按名称选择。哈希会自动填入，导出前会验证更改的记录和校验和。', '複製已有物品、移除未指派的因子或未啟用的輝石，或從目錄依名稱選擇。雜湊值會自動填入，下載前會驗證變更紀錄與檢查碼。'],
-  'Copy an owned entry, delete unassigned Sigils or inactive Wrightstones, or choose one by name from the catalog. New copies go into an empty slot and are left unassigned.': ['所持品を複製するか、未割り当てのジーンまたは無効状態のウェールライトストーンを削除するか、カタログから選択できます。複製は空きスロットに入り、割り当てられません。', '复制已有物品、删除未分配的因子或未激活的辉石，或从目录按名称选择。副本会放入空槽位且不分配给角色。', '複製已有物品、刪除未指派的因子或未啟用的輝石，或從目錄依名稱選擇。副本會放入空欄位且不會指派給角色。'],
+  'Add Sigils and Wrightstones.': ['ジーンと加護を追加。', '添加因子与辉石。', '新增因子與輝石。'],
+  'Edit Sigils and Wrightstones.': ['ジーンと加護を編集。', '编辑因子与辉石。', '編輯因子與輝石。'],
+  'Copy an entry, remove an unassigned Sigil or inactive Wrightstone, or choose one by name from the catalog. Hashes are filled in for you. Export verifies the changed records and checksum before download.': ['所持品を複製するか、未割り当てのジーンまたは無効状態の加護を削除するか、カタログから選択できます。ハッシュは自動入力され、ダウンロード前に変更レコードとチェックサムを検証します。', '复制已有物品、移除未分配的因子或未激活的辉石，或从目录按名称选择。哈希会自动填入，导出前会验证更改的记录和校验和。', '複製已有物品、移除未指派的因子或未啟用的輝石，或從目錄依名稱選擇。雜湊值會自動填入，下載前會驗證變更紀錄與檢查碼。'],
+  'Copy an owned entry, delete unassigned Sigils or inactive Wrightstones, or choose one by name from the catalog. New copies go into an empty slot and are left unassigned.': ['所持品を複製するか、未割り当てのジーンまたは無効状態の加護を削除するか、カタログから選択できます。複製は空きスロットに入り、割り当てられません。', '复制已有物品、删除未分配的因子或未激活的辉石，或从目录按名称选择。副本会放入空槽位且不分配给角色。', '複製已有物品、刪除未指派的因子或未啟用的輝石，或從目錄依名稱選擇。副本會放入空欄位且不會指派給角色。'],
   'PENDING CHANGES': ['保留中の変更', '待处理更改', '待處理變更'],
   'This item cannot be safely removed.': ['このアイテムは安全に削除できません。', '无法安全移除此物品。', '無法安全移除此物品。'],
   'Remove queued item': ['追加予定のアイテムを削除', '移除待添加物品', '移除待新增物品'],
@@ -112,14 +113,15 @@ const UI_TRANSLATIONS = {
   Undo: ['元に戻す', '撤销', '復原'],
   'Undo item removal': ['アイテム削除を元に戻す', '撤销移除物品', '復原物品移除'],
   'Only unassigned Sigils can be deleted.': ['未割り当てのジーンのみ削除できます。', '只能删除未分配的因子。', '只能刪除未指派的因子。'],
-  'Only inactive Wrightstones can be deleted.': ['無効状態のウェールライトストーンのみ削除できます。', '只能删除未激活的辉石。', '只能刪除未啟用的輝石。'],
+  'Only inactive Wrightstones can be deleted.': ['無効状態の加護のみ削除できます。', '只能删除未激活的辉石。', '只能刪除未啟用的輝石。'],
   'queued for removal': ['削除予定', '待移除', '待移除'],
   'active in source': ['元データで有効', '源数据中已激活', '來源資料中已啟用'],
   'fixed secondary': ['固定の第2特性', '固定副词条', '固定副詞條'],
   'selectable secondary': ['選択可能な第2特性', '可选副词条', '可選副詞條'],
-  'Uncatalogued trait': ['カタログにない特性', '未收录词条', '未收錄詞條'],
-  'Uncatalogued Sigil': ['カタログにないジーン', '目录中未收录的因子', '目錄中未收錄的因子'],
-  'Uncatalogued Wrightstone': ['カタログにないウェールライトストーン', '目录中未收录的辉石', '目錄中未收錄的輝石'],
+  'Uncatalogued trait': ['未登録の特性', '未收录词条', '未收錄詞條'],
+  'Uncatalogued Sigil': ['未登録のジーン', '目录中未收录的因子', '目錄中未收錄的因子'],
+  'Uncatalogued Wrightstone': ['未登録の加護', '目录中未收录的辉石', '目錄中未收錄的輝石'],
+  'Uncatalogued item': ['未登録のアイテム', '目录中未收录的物品', '目錄中未收錄的物品'],
   'OVERMASTERY SLOT': ['オーバーマスタリー枠', '角色强化槽位', '角色強化欄位'],
   Unavailable: ['利用不可', '不可用', '無法使用'],
   'The paired save fields are incomplete.': ['対応するセーブデータの項目が不足しています。', '配对的存档字段不完整。', '配對的存檔欄位不完整。'],
@@ -158,6 +160,7 @@ const UI_TRANSLATIONS = {
   Characters: ['キャラクター', '角色', '角色'],
   'Find a character': ['キャラクターを検索', '搜索角色', '搜尋角色'],
   'No matching characters.': ['該当するキャラクターがいません。', '没有匹配的角色。', '沒有符合條件的角色。'],
+  'No supported characters found.': ['対応しているキャラクターが見つかりません。', '未找到已识别的角色。', '找不到已識別的角色。'],
   'Select a character to edit their save slots.': ['キャラクターを選んでセーブスロットを編集してください。', '选择角色以编辑其存档槽位。', '選擇角色以編輯其存檔欄位。'],
   'SAVED CHARACTER': ['保存キャラクター', '已保存角色', '已儲存角色'],
   UNIT: ['ユニット', '单位', '單位'],
@@ -265,16 +268,15 @@ const STAT_NAMES = {
 
 const GENERIC_TERMS = {
   Sigil: ['ジーン', '因子', '因子'],
-  Wrightstone: ['ウェールライトストーン', '辉石', '輝石'],
+  Wrightstone: ['加護', '辉石', '輝石'],
 }
 
-// The licensed name dataset has no Wrightstone translations. These concise
-// descriptions retain the English item name so players can cross-reference it.
+// Wrightstone type names use the Japanese 加護 terminology.
 const WRIGHTSTONE_NAMES = {
-  'Dread Wrightstone': ['畏怖の輝石（Dread Wrightstone）', '恐惧辉石（Dread Wrightstone）', '恐懼輝石（Dread Wrightstone）'],
-  'Vitality Wrightstone': ['生命の輝石（Vitality Wrightstone）', '生命辉石（Vitality Wrightstone）', '生命輝石（Vitality Wrightstone）'],
-  'Fortification Wrightstone': ['堅牢の輝石（Fortification Wrightstone）', '坚固辉石（Fortification Wrightstone）', '堅固輝石（Fortification Wrightstone）'],
-  'Sequestration Wrightstone': ['隔絶の輝石（Sequestration Wrightstone）', '隔绝辉石（Sequestration Wrightstone）', '隔絕輝石（Sequestration Wrightstone）'],
+  'Dread Wrightstone': ['畏怖の加護', '恐惧辉石（Dread Wrightstone）', '恐懼輝石（Dread Wrightstone）'],
+  'Vitality Wrightstone': ['息吹の加護', '生命辉石（Vitality Wrightstone）', '生命輝石（Vitality Wrightstone）'],
+  'Fortification Wrightstone': ['鎮守の加護', '坚固辉石（Fortification Wrightstone）', '堅固輝石（Fortification Wrightstone）'],
+  'Sequestration Wrightstone': ['隔絶の加護', '隔绝辉石（Sequestration Wrightstone）', '隔絕輝石（Sequestration Wrightstone）'],
 }
 
 export function normalizeLanguage(language) {
@@ -320,6 +322,20 @@ export function allInventoryTermNames(name, kind) {
   return [name, ...Object.values(collection[name] ?? {})]
 }
 
+export function localizeMaterialItem(name, language) {
+  const normalizedLanguage = normalizeLanguage(language)
+  if (normalizedLanguage === 'en') return name
+
+  const wrightstone = name.match(/^(Dread|Vitality|Fortification|Sequestration) Wrightstone \(ITEM_[^)]+\)$/)
+  if (wrightstone) return localizeInventoryTerm(`${wrightstone[1]} Wrightstone`, 'wrightstone', normalizedLanguage)
+
+  return normalizedLanguage === 'ja' ? MATERIAL_ITEM_TERMS[name] ?? name : name
+}
+
+export function allMaterialItemNames(name, language) {
+  return [...new Set([name, localizeMaterialItem(name, language)])]
+}
+
 function translateDynamicText(text, language) {
   const index = LANGUAGE_INDEX[language]
   if (index === undefined) return text
@@ -330,7 +346,7 @@ function translateDynamicText(text, language) {
     return `${localizeInventoryTerm(match[1], 'sigil', language)} · ${secondary}`
   }
   match = text.match(/^Choose a (Sigil|Wrightstone)$/)
-  if (match) return [`${match[1] === 'Sigil' ? 'ジーン' : 'ウェールライトストーン'}を選択`, `${match[1] === 'Sigil' ? '选择因子' : '选择辉石'}`, `${match[1] === 'Sigil' ? '選擇因子' : '選擇輝石'}`][index]
+  if (match) return [`${match[1] === 'Sigil' ? 'ジーン' : '加護'}を選択`, `${match[1] === 'Sigil' ? '选择因子' : '选择辉石'}`, `${match[1] === 'Sigil' ? '選擇因子' : '選擇輝石'}`][index]
   match = text.match(/^(\d+) items? queued$/)
   if (match) return [
     `${match[1]} 件を追加予定`,
@@ -445,7 +461,7 @@ function translateDynamicText(text, language) {
     `已下載 ${match[1]}。檢查碼、角色強化變更 ${match[2]} 項、背包新增 ${match[3]} 項及移除 ${match[4]} 項、精通點數變更 ${match[5]} 項均已驗證。`,
   ][index]
   match = text.match(/^The (sigil|wrightstone) slot counter or serial records are ambiguous, so this save cannot be edited safely\.$/)
-  if (match) return [`${match[1] === 'sigil' ? 'ジーン' : 'ウェールライトストーン'}のスロット数またはシリアル記録が不明確なため、このセーブは安全に編集できません。`, `由于${match[1] === 'sigil' ? '因子' : '辉石'}槽位计数器或序列号记录不明确，无法安全编辑此存档。`, `由於${match[1] === 'sigil' ? '因子' : '輝石'}欄位計數器或序號紀錄不明確，無法安全編輯此存檔。`][index]
+  if (match) return [`${match[1] === 'sigil' ? 'ジーン' : '加護'}のスロット数またはシリアル記録が不明確なため、このセーブは安全に編集できません。`, `由于${match[1] === 'sigil' ? '因子' : '辉石'}槽位计数器或序列号记录不明确，无法安全编辑此存档。`, `由於${match[1] === 'sigil' ? '因子' : '輝石'}欄位計數器或序號紀錄不明確，無法安全編輯此存檔。`][index]
   return text
 }
 
