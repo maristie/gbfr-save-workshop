@@ -22,7 +22,7 @@ Use the language selector in the header to switch between English, Japanese, Sim
 
 1. Choose or drop a readable `.dat` save file.
 2. Use **Overmastery** to edit any character’s four overmastery slots, or **Bag items** to add Sigils and Wrightstones.
-3. In **Bag items**, copy an existing entry or open **Create from item catalog** to choose a named Sigil or Wrightstone, its traits, and how many copies to add. The editor fills in the save hashes automatically and keeps your catalog selections when you queue additions. Copies are unassigned and use existing empty save slots. Trait combinations are not checked for in-game legality, and the catalog may not cover every game item.
+3. In **Bag items**, copy an existing entry or open **Create from item catalog** to choose a named Sigil or Wrightstone, its traits, and how many copies to add. For selectable `+` Sigils, the second-trait list includes every cataloged trait, allowing combinations made through Sigil Synthesis even when they are outside the natural drop pool. Fixed-secondary Sigils keep their fixed trait. The editor fills in save hashes automatically and keeps your catalog selections when you queue additions. Copies are unassigned and use existing empty save slots. Trait combinations are not checked for in-game legality, and the catalog may not cover every game item.
 4. Choose **Download edited save**. The browser checks the save checksum and reads back changed overmastery and inventory fields before exporting a new `*-edited.dat` file.
 5. Keep the original save as a backup and make sure the game is closed before replacing a save manually.
 

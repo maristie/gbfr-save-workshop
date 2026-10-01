@@ -46,6 +46,7 @@ const UI_TRANSLATIONS = {
   'Search item names, traits, or slot ID': ['アイテム名、特性、スロットIDを検索', '搜索物品名称、词条或槽位 ID', '搜尋物品名稱、詞條或欄位 ID'],
   'Create from item catalog': ['アイテムカタログから作成', '从物品目录创建', '從物品目錄建立'],
   'Select named items and traits. Their save hashes are filled in automatically. Trait combinations are not checked for in-game legality.': ['アイテムと特性を選択すると、セーブデータ用のハッシュが自動入力されます。特性の組み合わせがゲーム内で有効かは検証されません。', '选择物品和词条后会自动填入存档哈希。不会检查词条组合在游戏中是否合法。', '選擇物品與詞條後會自動填入存檔雜湊值。不會檢查詞條組合在遊戲中是否合法。'],
+  'For selectable + Sigils, all cataloged traits are available as the second trait, including combinations produced by Sigil Synthesis outside the natural drop pool. Trait combinations are not checked for in-game legality.': ['第2特性を選べる＋付きジーンでは、自然ドロップの特性プール外でもジーン合成で作れる組み合わせに対応するため、カタログ内の全特性を第2特性に選択できます。ゲーム内で有効な組み合わせかは検証されません。', '对于可选副词条的“+”因子，副词条可以从全部已收录词条中选择，因此也能填写通过因子合成得到、但不在自然掉落词条池中的组合。不会检查组合在游戏中是否合法。', '對於可選副詞條的「+」因子，副詞條可以從全部已收錄詞條中選擇，因此也能填入透過因子合成取得、但不在自然掉落詞條池中的組合。不會檢查組合在遊戲中是否合法。'],
   'The item catalog is unavailable.': ['アイテムカタログを利用できません。', '物品目录不可用。', '物品目錄無法使用。'],
   'Choose a': ['選択：', '选择：', '選擇：'],
   'SECONDARY TRAIT': ['第2特性', '副词条', '副詞條'],

@@ -91,10 +91,11 @@ function traitOptions(traits, includeEmpty = false, selectedHash = '') {
 }
 
 function optionsForSigil(item) {
-  const allowed = item.secondaryTraitHashes
+  const secondaryHashes = item.secondaryTraitHashes ?? []
+  if (!item.fixedSecondary && secondaryHashes.length > 0) return INVENTORY_CATALOG.traits
+  return secondaryHashes
     .map((hash) => traitForHash(Number(hash)))
     .filter(Boolean)
-  return allowed
 }
 
 function primaryTraitFor(item) {
@@ -255,6 +256,9 @@ function renderInventoryCategory(kind) {
   const moreMarkup = matched.length > shown.length
     ? `<p class="inventory-limit">Showing 100 of ${matched.length.toLocaleString()} matches. Refine the item name or trait search to narrow the list.</p>`
     : ''
+  const catalogHelp = kind === 'sigil'
+    ? 'For selectable + Sigils, all cataloged traits are available as the second trait, including combinations produced by Sigil Synthesis outside the natural drop pool. Trait combinations are not checked for in-game legality.'
+    : 'Select named items and traits. Their save hashes are filled in automatically. Trait combinations are not checked for in-game legality.'
   return `<section class="inventory-card">
     <div class="inventory-card-heading"><div><p class="eyebrow">${label.toUpperCase()}</p><h3>${title}</h3></div><span class="inventory-capacity">${capText}</span></div>
     <p class="inventory-help">Choose an owned entry to add a matching copy. New copies go into an existing empty slot and are left unassigned.</p>
@@ -263,7 +267,7 @@ function renderInventoryCategory(kind) {
     <div class="inventory-list">${rows || emptyMarkup}${moreMarkup}</div>
     <details class="raw-add-details" ${state.openRawKind === kind ? 'open' : ''}>
       <summary>Create from item catalog</summary>
-      <p>Select named items and traits. Their save hashes are filled in automatically. Trait combinations are not checked for in-game legality.</p>
+      <p>${catalogHelp}</p>
       ${renderCatalogForm(kind)}
     </details>
   </section>`
@@ -692,7 +696,7 @@ function queueCatalogInventoryItem(event, form) {
     const primaryTrait = primaryTraitFor(item)
     if (!primaryTrait) throw new Error('The selected item has no recognized primary trait.')
     const secondaryHash = data.get('trait1Hash')
-    if (kind === 'sigil' && secondaryHash && !item.secondaryTraitHashes.includes(secondaryHash)) {
+    if (kind === 'sigil' && secondaryHash && !optionsForSigil(item).some((trait) => trait.hash === secondaryHash)) {
       throw new Error('Choose a secondary trait available for the selected Sigil.')
     }
     if (kind === 'sigil' && item.fixedSecondary && secondaryHash !== item.secondaryTraitHashes[0]) {
