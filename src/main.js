@@ -654,7 +654,7 @@ function formatBytes(size) {
   return `${(size / (1024 * 1024)).toFixed(2)} MB`
 }
 
-function render() {
+function render({ itemListScrollTop = null } = {}) {
   const changes = (() => { try { return currentChanges() } catch { return [] } })()
   const languageOptions = LANGUAGE_OPTIONS.map(({ value, label }) => `<option value="${value}"${value === state.language ? ' selected' : ''}>${label}</option>`).join('')
   app.innerHTML = `<header class="topbar">
@@ -671,6 +671,10 @@ function render() {
   localizeDOM(app, state.language)
   bindEvents()
   if (state.filter) applyFilter()
+  if (itemListScrollTop !== null) {
+    const itemList = app.querySelector('.stackable-items-card .inventory-list')
+    if (itemList) itemList.scrollTop = itemListScrollTop
+  }
 }
 
 function applyFilter() {
@@ -939,6 +943,7 @@ function removeQueuedAddition(draftId) {
 
 function applyItemQuantity(event, form) {
   event.preventDefault()
+  const itemListScrollTop = app.querySelector('.stackable-items-card .inventory-list')?.scrollTop ?? 0
   try {
     if (!state.parsed?.checksumValid) throw new Error('The input save checksum is invalid; editing is disabled for safety.')
     const unitId = Number(form.dataset.unitId)
@@ -962,7 +967,7 @@ function applyItemQuantity(event, form) {
     state.error = error instanceof Error ? error.message : String(error)
     state.notice = ''
   }
-  render()
+  render({ itemListScrollTop })
 }
 
 function resetEdits() {
