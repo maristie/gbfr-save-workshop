@@ -46,6 +46,7 @@ const state = {
   inventoryAdds: [],
   inventoryRemovals: [],
   itemQuantityDrafts: {},
+  itemQuantityInputDrafts: {},
   inventoryFilter: { sigil: '', wrightstone: '', items: '' },
   itemListLimit: ITEM_LIST_PAGE_SIZE,
   catalogDrafts: { sigil: null, wrightstone: null },
@@ -149,6 +150,33 @@ function itemQuantityChanges() {
     unitId: Number(unitId),
     quantity,
   }))
+}
+
+function itemQuantityInputCount() {
+  return Object.keys(state.itemQuantityInputDrafts).length
+}
+
+function itemQuantityInputCountLabel(count) {
+  const locale = state.language === 'ja' ? 'ja-JP' : state.language === 'zh-CN' ? 'zh-CN' : state.language === 'zh-TW' ? 'zh-TW' : 'en-US'
+  const formattedCount = count.toLocaleString(locale)
+  if (state.language === 'ja') return `${formattedCount} 件を一括適用できます`
+  if (state.language === 'zh-CN') return `${formattedCount} 项数量待应用`
+  if (state.language === 'zh-TW') return `${formattedCount} 項數量待套用`
+  return `${formattedCount} item amount${count === 1 ? '' : 's'} ready to apply`
+}
+
+function updateItemQuantityBatchControls() {
+  const count = itemQuantityInputCount()
+  const label = app.querySelector('[data-role="item-quantity-input-count"]')
+  const button = app.querySelector('[data-action="apply-all-item-quantities"]')
+  if (label) label.textContent = itemQuantityInputCountLabel(count)
+  if (button) button.disabled = count === 0 || !state.parsed?.checksumValid
+}
+
+function editFeedbackMarkup(changes, queued, pointsChange) {
+  if (state.notice) return `<span class="feedback-check">✓</span>${escapeHTML(state.notice)}`
+  const itemDrafts = itemQuantityInputCount()
+  return `<span class="feedback-dot"></span><span>${changes.length ? `${changes.length} overmastery slot${changes.length === 1 ? '' : 's'}` : 'No overmastery edits'}</span>${pointsChange !== null ? `<span>· ${escapeHTML(localizeText('Mastery Points', state.language))}: ${escapeHTML(Number(state.parsed.masterPoints.value).toLocaleString())} → ${escapeHTML(Number(pointsChange).toLocaleString())}</span>` : ''}${queued ? `<span>· ${queued} bag change${queued === 1 ? '' : 's'}</span>` : ''}${itemDrafts ? `<span>· ${escapeHTML(itemQuantityInputCountLabel(itemDrafts))}</span>` : ''}`
 }
 
 function statOptions(slot) {
@@ -370,16 +398,24 @@ function renderItemStacks() {
     const itemCode = item?.id ?? row.hashText
     const hasDraft = Object.hasOwn(state.itemQuantityDrafts, row.unitId)
     const quantity = hasDraft ? state.itemQuantityDrafts[row.unitId] : row.quantity
+    const hasInputDraft = Object.hasOwn(state.itemQuantityInputDrafts, row.unitId)
+    const inputValue = hasInputDraft
+      ? state.itemQuantityInputDrafts[row.unitId]
+      : quantity
     const disabled = !row.editable || !state.parsed.checksumValid
     const current = row.quantity === null ? localizeText('Unavailable', state.language) : row.quantity.toLocaleString(locale)
-    const pending = hasDraft ? ` · ${localizeText('New amount', state.language)} ${Number(quantity).toLocaleString(locale)}` : ''
+    const pending = hasInputDraft
+      ? `${localizeText('Ready to apply', state.language)} ${inputValue || '—'}`
+      : hasDraft
+        ? `${localizeText('New amount', state.language)} ${Number(quantity).toLocaleString(locale)}`
+        : ''
     const searchNames = item ? allMaterialItemNames(item.name, state.language) : [label]
     const searchText = escapeHTML([...searchNames, label, itemCode, row.hashText, row.unitId].join(' ').toLowerCase())
     return `<article class="inventory-row item-quantity-row" data-inventory-row data-search="${searchText}">
-      <div class="inventory-item-copy"><strong>${escapeHTML(label)}</strong><small>${escapeHTML(itemCode)} · ${escapeHTML(localizeText('Unit', state.language))} ${row.unitId}</small><span>${escapeHTML(localizeText('Current amount', state.language))}: ${escapeHTML(current)}${escapeHTML(pending)}</span>${row.editable ? '' : `<small>${escapeHTML(localizeText('Read-only: item or quantity fields are incomplete or ambiguous.', state.language))}</small>`}</div>
+      <div class="inventory-item-copy"><strong>${escapeHTML(label)}</strong><small>${escapeHTML(itemCode)} · ${escapeHTML(localizeText('Unit', state.language))} ${row.unitId}</small><span>${escapeHTML(localizeText('Current amount', state.language))}: ${escapeHTML(current)}</span><span class="item-quantity-pending" data-role="item-quantity-input-status"${pending ? '' : ' hidden'}>${escapeHTML(pending)}</span>${row.editable ? '' : `<small>${escapeHTML(localizeText('Read-only: item or quantity fields are incomplete or ambiguous.', state.language))}</small>`}</div>
       <form class="item-quantity-form" data-role="item-quantity-form" data-unit-id="${row.unitId}">
         <label class="raw-field" for="item-quantity-${row.unitId}">${escapeHTML(localizeText('AMOUNT', state.language))}
-          <input id="item-quantity-${row.unitId}" data-role="item-quantity-input" type="number" min="0" max="${MAX_ITEM_QUANTITY}" step="1" inputmode="numeric" value="${quantity === null ? '' : escapeHTML(quantity)}" ${disabled ? 'disabled' : ''} required />
+          <input id="item-quantity-${row.unitId}" data-role="item-quantity-input" type="number" min="0" max="${MAX_ITEM_QUANTITY}" step="1" inputmode="numeric" value="${inputValue === null ? '' : escapeHTML(inputValue)}" ${disabled ? 'disabled' : ''} required />
         </label>
         <button class="subtle-button item-quantity-apply" type="submit" ${disabled ? 'disabled' : ''}>Apply amount</button>
       </form>
@@ -393,6 +429,8 @@ function renderItemStacks() {
   return `<section class="inventory-card stackable-items-card">
     <div class="inventory-card-heading"><div><p class="eyebrow">STACKABLE ITEMS</p><h3>Items and materials</h3></div><span class="inventory-capacity">${capText}</span></div>
     <p class="inventory-help">Set quantities for existing materials, currency, consumables, and other stackable items. Only stacks already active in the save can be edited. The save field accepts 0–${MAX_ITEM_QUANTITY.toLocaleString('en-US')}.</p>
+    <p class="item-quantity-bulk-help">Edit several amounts, then apply them together.</p>
+    <div class="item-quantity-bulk-actions"><span data-role="item-quantity-input-count" aria-live="polite">${escapeHTML(itemQuantityInputCountLabel(itemQuantityInputCount()))}</span><button class="subtle-button item-quantity-bulk-apply" data-action="apply-all-item-quantities" type="button" ${itemQuantityInputCount() > 0 && state.parsed.checksumValid ? '' : 'disabled'}>Apply all amounts</button></div>
     <label class="search-box inventory-search"><span>⌕</span><input data-role="inventory-search" data-kind="items" type="search" placeholder="Search item names, IDs, hashes, or slot" value="${escapeHTML(state.inventoryFilter.items)}" autocomplete="off" /></label>
     <div class="inventory-list">${rows || emptyMarkup}${moreMarkup}</div>
   </section>`
@@ -577,8 +615,9 @@ function renderLoaded() {
   const checksumValid = state.parsed.checksumValid
   const queued = inventoryChangeCount()
   const pointsChange = masterPointsChange()
-  const hasPending = changes.length > 0 || queued > 0 || pointsChange !== null
-  const canDownload = hasPending && checksumValid
+  const unappliedItemQuantityCount = itemQuantityInputCount()
+  const hasPending = changes.length > 0 || queued > 0 || pointsChange !== null || unappliedItemQuantityCount > 0
+  const canDownload = hasPending && checksumValid && unappliedItemQuantityCount === 0
   const slotsMarkup = character ? character.slots.map((slot) => {
     const value = slotValue(slot)
     const stat = getStat(slot.draftHash)
@@ -611,7 +650,13 @@ function renderLoaded() {
     </article>`
   }).join('') : ''
 
-  const downloadLabel = canDownload ? `Download edited save <span>↓</span>` : checksumValid ? 'No changes to download' : 'Checksum needs review'
+  const downloadLabel = canDownload
+    ? `Download edited save <span>↓</span>`
+    : !checksumValid
+      ? 'Checksum needs review'
+      : unappliedItemQuantityCount > 0
+        ? 'Apply item amounts first'
+        : 'No changes to download'
   return `<section class="workspace">
     <div class="file-banner">
       <div class="file-icon"><span></span><span></span></div>
@@ -643,7 +688,7 @@ function renderLoaded() {
       </section>
     </div>`}
     <div class="edit-footer workspace-footer">
-      <div class="edit-feedback" aria-live="polite">${state.notice ? `<span class="feedback-check">✓</span>${escapeHTML(state.notice)}` : `<span class="feedback-dot"></span><span>${changes.length ? `${changes.length} overmastery slot${changes.length === 1 ? '' : 's'}` : 'No overmastery edits'}</span>${pointsChange !== null ? `<span>· ${escapeHTML(localizeText('Mastery Points', state.language))}: ${escapeHTML(Number(state.parsed.masterPoints.value).toLocaleString())} → ${escapeHTML(Number(pointsChange).toLocaleString())}</span>` : ''}${queued ? `<span>· ${queued} bag change${queued === 1 ? '' : 's'}</span>` : ''}`}</div>
+      <div class="edit-feedback" aria-live="polite">${editFeedbackMarkup(changes, queued, pointsChange)}</div>
       <div class="edit-actions"><button class="subtle-button" data-action="reset" type="button" ${hasPending ? '' : 'disabled'}>Reset edits</button><button class="primary-button download-button" data-action="download" type="button" ${canDownload ? '' : 'disabled'}>${downloadLabel}</button></div>
     </div>
     <div class="workspace-note"><span>⟲</span> Export creates a new file. Keep your original save as a backup until the game loads the edited copy.</div>
@@ -744,6 +789,45 @@ function bindEvents() {
   app.querySelectorAll('[data-role="item-quantity-form"]').forEach((form) => {
     form.addEventListener('submit', (event) => applyItemQuantity(event, form))
   })
+  app.querySelectorAll('[data-role="item-quantity-input"]').forEach((quantityInput) => {
+    quantityInput.addEventListener('input', (event) => {
+      const form = event.currentTarget.closest('[data-role="item-quantity-form"]')
+      const unitId = Number(form?.dataset.unitId)
+      if (!Number.isSafeInteger(unitId)) return
+      const row = state.parsed.inventory.items.rows.find((entry) => entry.unitId === unitId)
+      const currentQuantity = Object.hasOwn(state.itemQuantityDrafts, unitId)
+        ? state.itemQuantityDrafts[unitId]
+        : row?.quantity
+      const value = event.currentTarget.value
+      const drafts = { ...state.itemQuantityInputDrafts }
+      if (value === String(currentQuantity)) delete drafts[unitId]
+      else drafts[unitId] = value
+      state.itemQuantityInputDrafts = drafts
+      const status = form.closest('.inventory-row')?.querySelector('[data-role="item-quantity-input-status"]')
+      if (status) {
+        if (Object.hasOwn(drafts, unitId)) {
+          status.textContent = `${localizeText('Ready to apply', state.language)} ${value || '—'}`
+          status.hidden = false
+        } else if (Object.hasOwn(state.itemQuantityDrafts, unitId)) {
+          const locale = state.language === 'ja' ? 'ja-JP' : state.language === 'zh-CN' ? 'zh-CN' : state.language === 'zh-TW' ? 'zh-TW' : 'en-US'
+          status.textContent = `${localizeText('New amount', state.language)} ${Number(state.itemQuantityDrafts[unitId]).toLocaleString(locale)}`
+          status.hidden = false
+        } else {
+          status.textContent = ''
+          status.hidden = true
+        }
+      }
+      state.error = ''
+      state.notice = ''
+      app.querySelector('.load-error')?.remove()
+      updateItemQuantityBatchControls()
+      const feedback = app.querySelector('.edit-feedback')
+      if (feedback) {
+        feedback.innerHTML = editFeedbackMarkup(currentChanges(), inventoryChangeCount(), masterPointsChange())
+        localizeDOM(feedback, state.language)
+      }
+    })
+  })
 
   app.querySelectorAll('.raw-add-form').forEach((form) => {
     form.addEventListener('submit', (event) => queueCatalogInventoryItem(event, form))
@@ -768,6 +852,7 @@ function bindEvents() {
         state.itemListLimit += ITEM_LIST_PAGE_SIZE
         render({ itemListScrollTop })
       }
+      if (action === 'apply-all-item-quantities') applyAllItemQuantities()
       if (action === 'queue-copy') queueInventoryCopy(event.currentTarget.dataset.kind, Number(event.currentTarget.dataset.unitId))
       if (action === 'queue-removal') queueInventoryRemoval(event.currentTarget.dataset.kind, Number(event.currentTarget.dataset.unitId))
       if (action === 'restore-removal') restoreInventoryRemoval(event.currentTarget.dataset.kind, Number(event.currentTarget.dataset.unitId))
@@ -775,6 +860,7 @@ function bindEvents() {
       if (action === 'clear-item-quantity') {
         const unitId = Number(event.currentTarget.dataset.unitId)
         state.itemQuantityDrafts = Object.fromEntries(Object.entries(state.itemQuantityDrafts).filter(([key]) => Number(key) !== unitId))
+        state.itemQuantityInputDrafts = Object.fromEntries(Object.entries(state.itemQuantityInputDrafts).filter(([key]) => Number(key) !== unitId))
         state.error = ''
         state.notice = ''
         render()
@@ -951,26 +1037,51 @@ function removeQueuedAddition(draftId) {
 
 function applyItemQuantity(event, form) {
   event.preventDefault()
+  const unitId = Number(form.dataset.unitId)
+  const text = form.querySelector('[data-role="item-quantity-input"]')?.value.trim() ?? ''
+  commitItemQuantityValues([[unitId, text]])
+}
+
+function applyAllItemQuantities() {
+  commitItemQuantityValues(Object.entries(state.itemQuantityInputDrafts))
+}
+
+function commitItemQuantityValues(values) {
   const itemListScrollTop = app.querySelector('.stackable-items-card .inventory-list')?.scrollTop ?? 0
   try {
+    if (values.length === 0) return
     if (!state.parsed?.checksumValid) throw new Error('The input save checksum is invalid; editing is disabled for safety.')
-    const unitId = Number(form.dataset.unitId)
-    const row = state.parsed.inventory.items.rows.find((entry) => entry.unitId === unitId)
-    if (!row?.active || !row.editable) throw new Error('This bag item quantity cannot be safely changed.')
-    const text = form.querySelector('[data-role="item-quantity-input"]')?.value.trim() ?? ''
-    if (!/^\d+$/.test(text)) {
-      throw new Error(`Item quantity must be a whole number from 0 to ${MAX_ITEM_QUANTITY.toLocaleString('en-US')}.`)
-    }
-    const quantity = Number(text)
-    if (!Number.isSafeInteger(quantity) || quantity > MAX_ITEM_QUANTITY) {
-      throw new Error(`Item quantity must be a whole number from 0 to ${MAX_ITEM_QUANTITY.toLocaleString('en-US')}.`)
-    }
+    const validated = values.map(([unitIdText, textValue]) => {
+      const unitId = Number(unitIdText)
+      const row = state.parsed.inventory.items.rows.find((entry) => entry.unitId === unitId)
+      if (!row?.active || !row.editable) throw new Error('This bag item quantity cannot be safely changed.')
+      const text = String(textValue).trim()
+      if (!/^\d+$/.test(text)) {
+        throw new Error(`Item quantity must be a whole number from 0 to ${MAX_ITEM_QUANTITY.toLocaleString('en-US')}.`)
+      }
+      const quantity = Number(text)
+      if (!Number.isSafeInteger(quantity) || quantity > MAX_ITEM_QUANTITY) {
+        throw new Error(`Item quantity must be a whole number from 0 to ${MAX_ITEM_QUANTITY.toLocaleString('en-US')}.`)
+      }
+      return { unitId, row, quantity }
+    })
     const drafts = { ...state.itemQuantityDrafts }
-    if (quantity === row.quantity) delete drafts[unitId]
-    else drafts[unitId] = quantity
+    let changed = false
+    for (const { unitId, row, quantity } of validated) {
+      const previousQuantity = Object.hasOwn(drafts, unitId) ? drafts[unitId] : row.quantity
+      if (quantity === row.quantity) delete drafts[unitId]
+      else drafts[unitId] = quantity
+      if (quantity !== previousQuantity) changed = true
+    }
     state.itemQuantityDrafts = drafts
+    const inputDrafts = { ...state.itemQuantityInputDrafts }
+    for (const { unitId } of validated) delete inputDrafts[unitId]
+    state.itemQuantityInputDrafts = inputDrafts
     state.error = ''
-    state.notice = quantity === row.quantity ? 'Item amount unchanged.' : 'Item amount change queued.'
+    const singular = validated.length === 1
+    state.notice = changed
+      ? singular ? 'Item amount applied.' : 'Item amounts applied.'
+      : singular ? 'Item amount unchanged.' : 'Item amounts unchanged.'
   } catch (error) {
     state.error = error instanceof Error ? error.message : String(error)
     state.notice = ''
@@ -988,6 +1099,7 @@ function resetEdits() {
   state.inventoryAdds = []
   state.inventoryRemovals = []
   state.itemQuantityDrafts = {}
+  state.itemQuantityInputDrafts = {}
   state.masterPointsDraft = null
   state.error = ''
   state.notice = 'All edits reset.'
@@ -1005,6 +1117,7 @@ async function loadFile(file) {
     state.parsed = parsed
     state.masterPointsDraft = null
     state.itemQuantityDrafts = {}
+    state.itemQuantityInputDrafts = {}
     state.selectedUnitId = parsed.characters.find((character) => character.supported)?.unitId ?? null
     state.filter = ''
     state.activeTab = 'overmastery'
@@ -1022,6 +1135,7 @@ async function loadFile(file) {
     state.parsed = null
     state.masterPointsDraft = null
     state.itemQuantityDrafts = {}
+    state.itemQuantityInputDrafts = {}
     state.selectedUnitId = null
     state.inventoryAdds = []
     state.inventoryRemovals = []
