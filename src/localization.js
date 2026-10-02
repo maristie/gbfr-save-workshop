@@ -36,6 +36,7 @@ const UI_TRANSLATIONS = {
   Unit: ['ユニット', '单位', '單位'],
   'active stacks': ['有効なスタック', '已启用堆叠', '已啟用堆疊'],
   editable: ['編集可能', '可编辑', '可編輯'],
+  'Show more items': ['さらにアイテムを表示', '显示更多物品', '顯示更多物品'],
   'No matching bag items.': ['一致する所持品はありません。', '没有匹配的背包物品。', '沒有符合的背包物品。'],
   'Unavailable': ['利用不可', '不可用', '無法使用'],
   'Read-only: item or quantity fields are incomplete or ambiguous.': ['読み取り専用：アイテムまたは数量項目が不完全か、曖昧です。', '只读：物品或数量字段不完整或不明确。', '唯讀：物品或數量欄位不完整或不明確。'],
@@ -379,8 +380,8 @@ function translateDynamicText(text, language) {
   if (match) return [`所持品 ${match[1]} 個 · 空き ${match[2]} スロット`, `背包中 ${match[1]} 件 · 空槽位 ${match[2]} 个`, `背包中 ${match[1]} 件 · 空欄位 ${match[2]} 個`][index]
   match = text.match(/^Showing 100 of ([\d,]+) matches\. Refine the item name or trait search to narrow the list\.$/)
   if (match) return [`${match[1]} 件中100件を表示中。名前や特性を検索して絞り込んでください。`, `显示 ${match[1]} 条匹配结果中的前 100 条。请按物品名称或词条缩小范围。`, `顯示 ${match[1]} 筆符合結果中的前 100 筆。請依物品名稱或詞條縮小範圍。`][index]
-  match = text.match(/^Showing 100 of ([\d,]+) item matches\. Search item names and IDs to narrow the list\.$/)
-  if (match) return [`${match[1]} 件中100件を表示中。アイテム名やIDで検索して絞り込んでください。`, `显示 ${match[1]} 条匹配结果中的前 100 条。请按物品名称或 ID 缩小范围。`, `顯示 ${match[1]} 筆符合結果中的前 100 筆。請依物品名稱或 ID 縮小範圍。`][index]
+  match = text.match(/^Showing ([\d,]+) of ([\d,]+) item matches\.$/)
+  if (match) return [`${match[2]} 件中${match[1]}件を表示中`, `已显示 ${match[1]} 条，共 ${match[2]} 条匹配结果`, `已顯示 ${match[1]} 筆，共 ${match[2]} 筆符合結果`][index]
   match = text.match(/^Level (\d+) · (.+)$/)
   if (match) return [`レベル ${match[1]} · ${match[2]}`, `等级 ${match[1]} · ${match[2]}`, `等級 ${match[1]} · ${match[2]}`][index]
   match = text.match(/^LV (\d+)(.*)$/)

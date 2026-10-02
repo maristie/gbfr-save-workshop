@@ -32,6 +32,7 @@ import {
 } from './localization.js'
 
 const app = document.querySelector('#app')
+const ITEM_LIST_PAGE_SIZE = 100
 const state = {
   fileName: '',
   bytes: null,
@@ -46,6 +47,7 @@ const state = {
   inventoryRemovals: [],
   itemQuantityDrafts: {},
   inventoryFilter: { sigil: '', wrightstone: '', items: '' },
+  itemListLimit: ITEM_LIST_PAGE_SIZE,
   catalogDrafts: { sigil: null, wrightstone: null },
   nextDraftId: 1,
   openRawKind: '',
@@ -360,7 +362,7 @@ function renderItemStacks() {
       .toLowerCase()
       .includes(search)
   }) : active
-  const shown = matched.slice(0, 100)
+  const shown = matched.slice(0, state.itemListLimit)
   const locale = state.language === 'ja' ? 'ja-JP' : state.language === 'zh-CN' ? 'zh-CN' : state.language === 'zh-TW' ? 'zh-TW' : 'en-US'
   const rows = shown.map((row) => {
     const item = materialItemForHash(row.hash)
@@ -386,7 +388,7 @@ function renderItemStacks() {
   const capText = `${active.length.toLocaleString(locale)} ${localizeText('active stacks', state.language)} · ${active.filter((row) => row.editable).length.toLocaleString(locale)} ${localizeText('editable', state.language)}`
   const emptyMarkup = matched.length === 0 ? `<p class="inventory-empty">${escapeHTML(localizeText('No matching bag items.', state.language))}</p>` : ''
   const moreMarkup = matched.length > shown.length
-    ? `<p class="inventory-limit">${escapeHTML(localizeText(`Showing 100 of ${matched.length.toLocaleString(locale)} item matches. Search item names and IDs to narrow the list.`, state.language))}</p>`
+    ? `<div class="inventory-load-more"><p class="inventory-limit">${escapeHTML(localizeText(`Showing ${shown.length.toLocaleString(locale)} of ${matched.length.toLocaleString(locale)} item matches.`, state.language))}</p><button class="subtle-button inventory-show-more" data-action="show-more-items" type="button">${escapeHTML(localizeText('Show more items', state.language))}</button></div>`
     : ''
   return `<section class="inventory-card stackable-items-card">
     <div class="inventory-card-heading"><div><p class="eyebrow">STACKABLE ITEMS</p><h3>Items and materials</h3></div><span class="inventory-capacity">${capText}</span></div>
@@ -730,6 +732,7 @@ function bindEvents() {
     inputElement.addEventListener('input', (event) => {
       const kind = event.currentTarget.dataset.kind
       state.inventoryFilter[kind] = event.currentTarget.value
+      if (kind === 'items') state.itemListLimit = ITEM_LIST_PAGE_SIZE
       const caret = event.currentTarget.selectionStart
       render()
       const replacement = app.querySelector(`[data-role="inventory-search"][data-kind="${kind}"]`)
@@ -760,6 +763,11 @@ function bindEvents() {
       if (action === 'dismiss-error') { state.error = ''; render() }
       if (action === 'select-character') { state.selectedUnitId = Number(event.currentTarget.dataset.unitId); state.notice = ''; render() }
       if (action === 'switch-tab') { state.activeTab = event.currentTarget.dataset.tab; state.error = ''; render() }
+      if (action === 'show-more-items') {
+        const itemListScrollTop = app.querySelector('.stackable-items-card .inventory-list')?.scrollTop ?? 0
+        state.itemListLimit += ITEM_LIST_PAGE_SIZE
+        render({ itemListScrollTop })
+      }
       if (action === 'queue-copy') queueInventoryCopy(event.currentTarget.dataset.kind, Number(event.currentTarget.dataset.unitId))
       if (action === 'queue-removal') queueInventoryRemoval(event.currentTarget.dataset.kind, Number(event.currentTarget.dataset.unitId))
       if (action === 'restore-removal') restoreInventoryRemoval(event.currentTarget.dataset.kind, Number(event.currentTarget.dataset.unitId))
@@ -1004,6 +1012,7 @@ async function loadFile(file) {
     state.inventoryRemovals = []
     state.catalogDrafts = { sigil: null, wrightstone: null }
     state.inventoryFilter = { sigil: '', wrightstone: '', items: '' }
+    state.itemListLimit = ITEM_LIST_PAGE_SIZE
     state.openRawKind = ''
     if (!parsed.checksumValid) state.notice = ''
   } catch (error) {
