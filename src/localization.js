@@ -132,8 +132,10 @@ const UI_TRANSLATIONS = {
   queued: ['追加予定', '待添加', '待新增'],
   'Search item names, traits, or slot ID': ['アイテム名、特性、スロットIDを検索', '搜索物品名称、词条或槽位 ID', '搜尋物品名稱、詞條或欄位 ID'],
   'Create from item catalog': ['アイテムカタログから作成', '从物品目录创建', '從物品目錄建立'],
-  'Search Sigils by name or primary trait': ['ジーン名または主特性で検索', '按因子名称或主词条搜索', '依因子名稱或主詞條搜尋'],
-  'Search the catalog by Sigil name or primary trait. Results are grouped by primary trait.': ['ジーン名または主特性で検索できます。結果は主特性ごとにまとまります。', '可按因子名称或主词条搜索目录，结果按主词条分组。', '可依因子名稱或主詞條搜尋目錄，結果依主詞條分組。'],
+  'Search Sigil name': ['ジーン名で検索', '搜索因子名称', '搜尋因子名稱'],
+  'Search first trait': ['第1特性で検索', '搜索第一词条', '搜尋第一詞條'],
+  'Search second trait': ['第2特性で検索', '搜索第二词条', '搜尋第二詞條'],
+  'Search by Sigil name or first trait. Use the second-trait search to filter its options.': ['ジーン名または第1特性で検索できます。第2特性の検索欄で選択肢を絞り込めます。', '可按因子名称或第一词条搜索。使用第二词条搜索可筛选其下拉选项。', '可依因子名稱或第一詞條搜尋。使用第二詞條搜尋可篩選其下拉選項。'],
   'No Sigils match this search.': ['一致するジーンはありません。', '没有符合条件的因子。', '沒有符合條件的因子。'],
   'Current selection': ['現在の選択', '当前选择', '目前選擇'],
   'Type to search Sigils': ['検索してジーンを選択', '输入搜索因子', '輸入搜尋因子'],
@@ -442,10 +444,10 @@ function translateDynamicText(text, language) {
   if (match) return [`${match[1]} 件中100件を表示中。名前や特性を検索して絞り込んでください。`, `显示 ${match[1]} 条匹配结果中的前 100 条。请按物品名称或词条缩小范围。`, `顯示 ${match[1]} 筆符合結果中的前 100 筆。請依物品名稱或詞條縮小範圍。`][index]
   match = text.match(/^Showing ([\d,]+) of ([\d,]+) item matches\.$/)
   if (match) return [`${match[2]} 件中${match[1]}件を表示中`, `已显示 ${match[1]} 条，共 ${match[2]} 条匹配结果`, `已顯示 ${match[1]} 筆，共 ${match[2]} 筆符合結果`][index]
-  match = text.match(/^Showing ([\d,]+) of ([\d,]+) matching Sigils\. Add another word to narrow\.$/)
-  if (match) return [`一致するジーン${match[2]}件中${match[1]}件を表示中。検索語を追加して絞り込んでください。`, `显示 ${match[1]} 条，共 ${match[2]} 条符合的因子。可增加关键词缩小范围。`, `已顯示 ${match[1]} 筆，共 ${match[2]} 筆符合的因子。可增加關鍵字縮小範圍。`][index]
-  match = text.match(/^([\d,]+) matching Sigils · grouped by primary trait\.$/)
-  if (match) return [`主特性ごとに分類されたジーンが${match[1]}件見つかりました。`, `找到 ${match[1]} 个因子，结果按主词条分组。`, `找到 ${match[1]} 個因子，結果依主詞條分組。`][index]
+  match = text.match(/^Showing ([\d,]+) of ([\d,]+) matching Sigils\. Add a filter to narrow\.$/)
+  if (match) return [`一致するジーン${match[2]}件中${match[1]}件を表示中。検索条件を追加して絞り込んでください。`, `显示 ${match[1]} 条，共 ${match[2]} 条符合的因子。可增加筛选条件缩小范围。`, `已顯示 ${match[1]} 筆，共 ${match[2]} 筆符合的因子。可增加篩選條件縮小範圍。`][index]
+  match = text.match(/^([\d,]+) matching Sigils · grouped by first trait\.$/)
+  if (match) return [`第1特性ごとに分類されたジーンが${match[1]}件見つかりました。`, `找到 ${match[1]} 个因子，结果按第一词条分组。`, `找到 ${match[1]} 個因子，結果依第一詞條分組。`][index]
   match = text.match(/^Level (\d+) · (.+)$/)
   if (match) return [`レベル ${match[1]} · ${match[2]}`, `等级 ${match[1]} · ${match[2]}`, `等級 ${match[1]} · ${match[2]}`][index]
   match = text.match(/^LV (\d+)(.*)$/)

@@ -225,7 +225,10 @@ code { font: .68rem var(--mono); color:#adc6c7; }
 .raw-add-details summary { color:#9fc9c2; font-size:.65rem; cursor:pointer; }
 .raw-add-details > p { margin:7px 0 10px; color:#778891; font-size:.57rem; line-height:1.5; }
 .raw-add-form { display:flex; flex-direction:column; gap:9px; }
+.sigil-catalog-searches { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:7px; }
 .sigil-catalog-search { width:100%; }
+.sigil-secondary-controls { display:flex; flex-direction:column; gap:6px; }
+.sigil-secondary-search { width:100%; height:32px; }
 .catalog-search-status { min-height:1em; margin:0; color:#82969c; font-size:.57rem; line-height:1.45; }
 .sigil-level-field { max-width:160px; }
 .raw-field-hint { color:#778991; font:400 .56rem 'DM Sans','Segoe UI',sans-serif; letter-spacing:0; line-height:1.4; }
