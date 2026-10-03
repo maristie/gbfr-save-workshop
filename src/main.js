@@ -276,7 +276,7 @@ function renderUpload() {
   return `<section class="welcome-grid">
     <div class="welcome-copy">
       <p class="eyebrow"><span class="pulse-dot"></span> SAVE FILE EDITOR <span class="eyebrow-divider">/</span> SAVE WORKSHOP</p>
-      <h1>Edit overmasteries. Set Mastery Points.</h1>
+      <h1>Customize your Relink save.</h1>
       <p class="welcome-text">Read a Relink save, adjust overmastery stats and Mastery Points, edit existing stackable item quantities, and add Sigils, Wrightstones, or ER summons. Then download a verified copy.</p>
       <div class="trust-points">
         <span><i>01</i> Files stay on this device</span>
