@@ -14,7 +14,8 @@ const ITEM_STATE_ID_TYPES = [1803, 1804]
 const ITEM_EXTRA_STATE_ID_TYPE = 1807
 export const MAX_ITEM_QUANTITY = 0x7fffffff
 const SUMMON_CAPACITY = 1000
-const SUMMON_TYPES = { catalog: 1452, registered: 1453, maxSlot: 1454, unlocked: 1455, slot: 1456, type: 1457, traits: 1458, levels: 1459, rank: 1460 }
+// IDType 1460 is preserved as a raw per-summon uint32; its meaning and legal values are unverified.
+const SUMMON_TYPES = { catalog: 1452, registered: 1453, maxSlot: 1454, unlocked: 1455, slot: 1456, type: 1457, traits: 1458, levels: 1459, opaque: 1460 }
 const summonCatalogByHash = new Map(SUMMON_CATALOG.summons.map((summon) => [Number(summon.hash) >>> 0, summon]))
 const FIRST_CHARACTER_UNIT_ID = 10000
 const LAST_CHARACTER_UNIT_ID = 20000
@@ -365,7 +366,7 @@ export function parseSummons(uintUnits, intUnits = []) {
   const indexes = new Map()
   for (const table of [uintUnits, intUnits]) {
     for (const unit of table) {
-      if (unit.idType < SUMMON_TYPES.catalog || unit.idType > SUMMON_TYPES.rank) continue
+      if (unit.idType < SUMMON_TYPES.catalog || unit.idType > SUMMON_TYPES.opaque) continue
       if (!indexes.has(unit.idType)) indexes.set(unit.idType, new Map())
       const units = indexes.get(unit.idType)
       if (!units.has(unit.unitId)) units.set(unit.unitId, [])
@@ -404,8 +405,8 @@ export function parseSummons(uintUnits, intUnits = []) {
     const type = record(SUMMON_TYPES.type, unitId, 1)
     const traits = record(SUMMON_TYPES.traits, unitId, 2)
     const levels = record(SUMMON_TYPES.levels, unitId, 2)
-    const rank = record(SUMMON_TYPES.rank, unitId, 1)
-    if (!slot || !type || !traits || !levels || !rank) {
+    const opaque1460 = record(SUMMON_TYPES.opaque, unitId, 1)
+    if (!slot || !type || !traits || !levels || !opaque1460) {
       return unavailable('The summon slot records are missing or ambiguous.')
     }
     const row = {
@@ -416,10 +417,10 @@ export function parseSummons(uintUnits, intUnits = []) {
       bonusHash: traits.secondValue >>> 0,
       mainLevel: levels.firstValue >>> 0,
       bonusLevel: levels.secondValue >>> 0,
-      rank: rank.firstValue >>> 0,
-      offsets: { slot: slot.firstValueOffset, type: type.firstValueOffset, mainTrait: traits.firstValueOffset, bonus: traits.firstValueOffset + 4, mainLevel: levels.firstValueOffset, bonusLevel: levels.firstValueOffset + 4, rank: rank.firstValueOffset },
+      opaque1460: opaque1460.firstValue >>> 0,
+      offsets: { slot: slot.firstValueOffset, type: type.firstValueOffset, mainTrait: traits.firstValueOffset, bonus: traits.firstValueOffset + 4, mainLevel: levels.firstValueOffset, bonusLevel: levels.firstValueOffset + 4, opaque1460: opaque1460.firstValueOffset },
     }
-    row.empty = row.slotId === 0 && row.typeHash === EMPTY_HASH && row.mainTraitHash === EMPTY_HASH && row.bonusHash === EMPTY_HASH && row.mainLevel === 0xffffffff && row.bonusLevel === 0xffffffff && row.rank === 0
+    row.empty = row.slotId === 0 && row.typeHash === EMPTY_HASH && row.mainTraitHash === EMPTY_HASH && row.bonusHash === EMPTY_HASH && row.mainLevel === 0xffffffff && row.bonusLevel === 0xffffffff && row.opaque1460 === 0
     if (!row.empty && (row.slotId === 0 || row.typeHash === EMPTY_HASH || seenSlotIds.has(row.slotId))) {
       return unavailable('The summon inventory contains an incomplete or duplicate slot.')
     }
@@ -877,8 +878,10 @@ export function planSummonAdditions(parsed, additions) {
     const bonusHash = hashValue(source?.bonusHash, 'Summon bonus hash')
     const mainLevel = source?.mainLevel
     const bonusLevel = source?.bonusLevel
-    const rank = source?.rank
-    if (!Number.isInteger(rank) || rank < 0 || rank > 3) fail('Summon upgrade rank must be from 0 to 3.')
+    const field1460 = source?.field1460
+    if (!Number.isInteger(field1460) || field1460 < 0 || field1460 > 0xffffffff) {
+      fail('Field 1460 must be an unsigned 32-bit integer. Its in-game meaning and valid values are unconfirmed.')
+    }
     const definition = summonCatalogByHash.get(typeHash)
     if (!definition) fail('The summon type is not in the verified catalog.')
     const main = definition.mainTraits.find((entry) => Number(entry.hash) === mainTraitHash)
@@ -890,7 +893,8 @@ export function planSummonAdditions(parsed, additions) {
     if (!registrations?.length) fail('This summon type is not registered in the save catalog.')
     const target = targets[index]
     const slotId = inventory.maxSlotId + index + 1
-    for (const [field, value] of Object.entries({ slot: slotId, type: typeHash, mainTrait: mainTraitHash, bonus: bonusHash, mainLevel, bonusLevel, rank })) {
+    // Preserve the user's raw IDType 1460 value; its in-game meaning is unconfirmed.
+    for (const [field, value] of Object.entries({ slot: slotId, type: typeHash, mainTrait: mainTraitHash, bonus: bonusHash, mainLevel, bonusLevel, opaque1460: field1460 })) {
       patches.push({ offset: target.offsets[field], value, type: 'uint32' })
     }
     for (const flag of registrations) {
@@ -898,7 +902,7 @@ export function planSummonAdditions(parsed, additions) {
       registrationOffsets.add(flag.offset)
       patches.push({ offset: flag.offset, value: 1, type: 'uint32' })
     }
-    expected.push({ unitId: target.unitId, slotId, typeHash, mainTraitHash, bonusHash, mainLevel, bonusLevel, rank })
+    expected.push({ unitId: target.unitId, slotId, typeHash, mainTraitHash, bonusHash, mainLevel, bonusLevel, opaque1460: field1460 })
   }
   const maxSlotId = inventory.maxSlotId + additions.length
   patches.push({ offset: inventory.counterOffset, value: maxSlotId, type: 'uint32' })

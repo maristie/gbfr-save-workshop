@@ -231,6 +231,7 @@ code { font: .68rem var(--mono); color:#adc6c7; }
 .sigil-secondary-search { width:100%; height:32px; }
 .catalog-search-status { min-height:1em; margin:0; color:#82969c; font-size:.57rem; line-height:1.45; }
 .sigil-level-field { max-width:160px; }
+.summon-field1460 { max-width:180px; }
 .raw-field-hint { color:#778991; font:400 .56rem 'DM Sans','Segoe UI',sans-serif; letter-spacing:0; line-height:1.4; }
 .raw-lanes { display:flex; flex-direction:column; gap:8px; }
 .raw-lane { display:grid; grid-template-columns:minmax(0,1fr) 95px; gap:8px; }
@@ -242,7 +243,6 @@ code { font: .68rem var(--mono); color:#adc6c7; }
 .raw-submit { min-height:34px; align-self:flex-start; padding:0 12px; font-size:.63rem; }
 .summons-workspace .inventory-grid { grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr); }
 .summon-owned-card .inventory-list { max-height:410px; margin-top:12px; }
-.summon-rank-field { max-width:120px; }
 .queue-panel { display:grid; grid-template-columns:170px minmax(0,1fr); gap:15px; margin-top:14px; }
 .queue-panel .eyebrow { font-size:.52rem; }
 .queue-panel h3 { font-size:.91rem; }

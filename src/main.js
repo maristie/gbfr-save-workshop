@@ -727,7 +727,7 @@ function renderSummonsPanel() {
   const bonusLevel = bonusRule && draft.bonusLevel !== '' && Number.isInteger(draftBonusLevel) && bonusRule.levels.includes(draftBonusLevel)
     ? draftBonusLevel
     : bonusRule?.levels.at(-1) ?? null
-  const rank = Number.isInteger(Number(draft.rank)) && Number(draft.rank) >= 0 && Number(draft.rank) <= 3 ? Number(draft.rank) : 0
+  const field1460Draft = draft.field1460 === undefined ? '0' : String(draft.field1460)
   const quantity = Math.max(1, Number.parseInt(draft.quantity, 10) || 1)
   const disabled = !supported || !state.parsed.checksumValid || remaining === 0 || !selected || !main || !bonus
   const typeOptions = matches.length
@@ -746,8 +746,8 @@ function renderSummonsPanel() {
     return `<option value="${level}"${level === bonusLevel ? ' selected' : ''}>Lv ${level} · ${value}${bonus.percent ? '%' : ''}</option>`
   }).join('')
   const owned = bucket.supported ? bucket.rows.filter((row) => !row.empty).sort((a, b) => b.slotId - a.slotId).slice(0, 12) : []
-  const ownedMarkup = owned.length ? owned.map((row) => `<article class="inventory-row"><div class="inventory-item-copy"><strong>${escapeHTML(summonName(row.typeHash))}</strong><small>${localizeText('Slot', state.language)} ${row.slotId} · ${localizeText('Rank', state.language)} ${row.rank}</small><span>${escapeHTML(traitLabel(row.mainTraitHash))} Lv ${row.mainLevel} · ${escapeHTML(summonBonusName(row.bonusHash))} Lv ${row.bonusLevel}</span></div></article>`).join('') : '<p class="inventory-empty">No summon stones in this save yet.</p>'
-  const queuedMarkup = state.summonAdds.length ? state.summonAdds.map((item) => `<div class="queue-item"><span><strong>${escapeHTML(summonName(item.typeHash))}</strong></span><small>${escapeHTML(traitLabel(item.mainTraitHash))} Lv ${item.mainLevel} · ${escapeHTML(summonBonusName(item.bonusHash))} Lv ${item.bonusLevel} · ${localizeText('Rank', state.language)} ${item.rank}</small><button class="queue-remove" data-action="remove-summon" data-draft-id="${item.draftId}" type="button" aria-label="Remove queued summon">×</button></div>`).join('') : '<p class="queue-empty">No summon additions queued.</p>'
+  const ownedMarkup = owned.length ? owned.map((row) => `<article class="inventory-row"><div class="inventory-item-copy"><strong>${escapeHTML(summonName(row.typeHash))}</strong><small>${localizeText('Slot', state.language)} ${row.slotId} · ${localizeText('Field 1460', state.language)} ${row.opaque1460}</small><span>${escapeHTML(traitLabel(row.mainTraitHash))} Lv ${row.mainLevel} · ${escapeHTML(summonBonusName(row.bonusHash))} Lv ${row.bonusLevel}</span></div></article>`).join('') : '<p class="inventory-empty">No summon stones in this save yet.</p>'
+  const queuedMarkup = state.summonAdds.length ? state.summonAdds.map((item) => `<div class="queue-item"><span><strong>${escapeHTML(summonName(item.typeHash))}</strong></span><small>${escapeHTML(traitLabel(item.mainTraitHash))} Lv ${item.mainLevel} · ${escapeHTML(summonBonusName(item.bonusHash))} Lv ${item.bonusLevel} · ${localizeText('Field 1460', state.language)} ${item.field1460}</small><button class="queue-remove" data-action="remove-summon" data-draft-id="${item.draftId}" type="button" aria-label="Remove queued summon">×</button></div>`).join('') : '<p class="queue-empty">No summon additions queued.</p>'
   const unavailable = bucket.supported
     ? bucket.unlocked ? '' : '<div class="alert alert-warning"><strong>Summons are not unlocked in this save.</strong> Obtain your first summon in Endless Ragnarok, then reopen the save.</div>'
     : `<div class="alert alert-warning"><strong>Summon creation is unavailable for this save.</strong> ${escapeHTML(bucket.reason)}</div>`
@@ -757,13 +757,13 @@ function renderSummonsPanel() {
     <div class="inventory-grid">
       <section class="inventory-card summon-create-card">
         <div class="inventory-card-heading"><div><p class="eyebrow">SUMMON CATALOG</p><h3>Create a summon</h3></div><span class="inventory-capacity">${bucket.occupied} ${localizeText('owned', state.language)} · ${remaining} ${localizeText('empty', state.language)}</span></div>
-        <p class="inventory-help">Both traits and their levels follow this summon’s cataloged natural rolls. Upgrade rank is separate from summon rarity.</p>
+        <p class="inventory-help">Trait and level options are limited to this summon’s cataloged natural roll pools. Field 1460 is a raw per-summon value; its meaning and valid in-game values are unconfirmed. Observed saves contain 0, 2, and 6.</p>
         <label class="search-box inventory-search"><span>⌕</span><input id="summon-search" type="search" placeholder="Search summon names or hashes" value="${escapeHTML(state.summonFilter)}" autocomplete="off" /></label>
         <form id="summon-add-form" class="raw-add-form">
           <div class="raw-lane"><label class="raw-field"><span>SUMMON TYPE *</span><select name="typeHash" ${disabled ? 'disabled' : ''} required>${typeOptions}</select></label><label class="raw-field"><span>QUANTITY *</span><input name="quantity" type="number" min="1" max="${Math.max(1, remaining)}" value="${quantity}" ${disabled ? 'disabled' : ''} required /></label></div>
           <div class="raw-lane"><label class="raw-field"><span>MAIN TRAIT *</span><select name="mainTraitHash" ${disabled ? 'disabled' : ''} required>${mainOptions}</select></label><label class="raw-field"><span>MAIN LEVEL *</span><select name="mainLevel" ${disabled ? 'disabled' : ''} required>${mainLevels}</select></label></div>
           <div class="raw-lane"><label class="raw-field"><span>EQUIP BONUS *</span><select name="bonusHash" ${disabled ? 'disabled' : ''} required>${bonusOptions}</select></label><label class="raw-field"><span>BONUS LEVEL *</span><select name="bonusLevel" ${disabled ? 'disabled' : ''} required>${bonusLevels}</select></label></div>
-          <label class="raw-field summon-rank-field"><span>UPGRADE RANK</span><select name="rank" ${disabled ? 'disabled' : ''}>${[0, 1, 2, 3].map((value) => `<option value="${value}"${rank === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label>
+          <label class="raw-field summon-field1460"><span>Field 1460 *</span><input name="field1460" type="number" min="0" max="4294967295" step="1" value="${escapeHTML(field1460Draft)}" ${disabled ? 'disabled' : ''} required /></label>
           <button class="primary-button raw-submit" type="submit" ${disabled ? 'disabled' : ''}>Add summon</button>
         </form>
       </section>
@@ -1274,7 +1274,7 @@ function removeQueuedAddition(draftId) {
 
 function rememberSummonForm(form) {
   const data = new FormData(form)
-  state.summonDraft = Object.fromEntries(['typeHash', 'mainTraitHash', 'mainLevel', 'bonusHash', 'bonusLevel', 'rank', 'quantity'].map((key) => [key, String(data.get(key) ?? '')]))
+  state.summonDraft = Object.fromEntries(['typeHash', 'mainTraitHash', 'mainLevel', 'bonusHash', 'bonusLevel', 'field1460', 'quantity'].map((key) => [key, String(data.get(key) ?? '')]))
 }
 
 function queueSummonAddition(event, form) {
@@ -1289,18 +1289,26 @@ function queueSummonAddition(event, form) {
     const quantity = Number(data.get('quantity'))
     const remaining = inventory.available - state.summonAdds.length
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > remaining) throw new Error(`Only ${Math.max(0, remaining)} empty summon slots remain.`)
+    const field1460Text = String(data.get('field1460') ?? '').trim()
+    if (!/^\d+$/.test(field1460Text)) {
+      throw new Error('Field 1460 must be an unsigned 32-bit integer. Its in-game meaning and valid values are unconfirmed.')
+    }
+    const field1460 = Number(field1460Text)
+    if (!Number.isInteger(field1460) || field1460 < 0 || field1460 > 0xffffffff) {
+      throw new Error('Field 1460 must be an unsigned 32-bit integer. Its in-game meaning and valid values are unconfirmed.')
+    }
     const addition = {
       typeHash: Number(data.get('typeHash')),
       mainTraitHash: Number(data.get('mainTraitHash')),
       mainLevel: Number(data.get('mainLevel')),
       bonusHash: Number(data.get('bonusHash')),
       bonusLevel: Number(data.get('bonusLevel')),
-      rank: Number(data.get('rank')),
+      field1460,
     }
     const definition = summonsByHash.get(addition.typeHash)
     const main = definition?.mainTraits.find((entry) => Number(entry.hash) === addition.mainTraitHash)
     const bonus = definition?.bonuses.find((entry) => Number(entry.hash) === addition.bonusHash)
-    if (!definition || !main?.levels.includes(addition.mainLevel) || !bonus?.levels.includes(addition.bonusLevel) || !summonBonusesByHash.has(addition.bonusHash) || !Number.isInteger(addition.rank) || addition.rank < 0 || addition.rank > 3) {
+    if (!definition || !main?.levels.includes(addition.mainLevel) || !bonus?.levels.includes(addition.bonusLevel) || !summonBonusesByHash.has(addition.bonusHash)) {
       throw new Error('Choose a summon and trait levels from its cataloged natural roll pools.')
     }
     if (!inventory.registrations.has(addition.typeHash)) throw new Error('This summon type is not registered in the save catalog.')
