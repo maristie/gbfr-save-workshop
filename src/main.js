@@ -717,6 +717,13 @@ function renderSummonsPanel() {
   const searchable = SUMMON_CATALOG.summons.filter((item) => bucket.registrations.has(Number(item.hash)))
   const needle = state.summonFilter.trim().toLowerCase()
   const matches = searchable.filter((item) => !needle || `${Object.values(item.names).join(' ')} ${item.hash}`.toLowerCase().includes(needle))
+  const summonNameCollator = new Intl.Collator(state.language, { numeric: true, sensitivity: 'base' })
+  const groupedMatches = [1, 2, 3].map((tier) => ({
+    tier,
+    items: matches
+      .filter((item) => item.tier === tier)
+      .sort((a, b) => summonNameCollator.compare(summonName(Number(a.hash)), summonName(Number(b.hash))) || Number(a.hash) - Number(b.hash)),
+  })).filter((group) => group.items.length)
   const draft = state.summonDraft
   const selected = matches.find((item) => Number(item.hash) === Number(draft.typeHash)) ?? matches[0] ?? null
   const main = selected?.mainTraits.find((entry) => Number(entry.hash) === Number(draft.mainTraitHash)) ?? selected?.mainTraits[0] ?? null
@@ -731,7 +738,7 @@ function renderSummonsPanel() {
   const quantity = Math.max(1, Number.parseInt(draft.quantity, 10) || 1)
   const disabled = !supported || !state.parsed.checksumValid || remaining === 0 || !selected || !main || !bonus
   const typeOptions = matches.length
-    ? matches.map((item) => `<option value="${item.hash}"${item === selected ? ' selected' : ''}>${escapeHTML(summonName(Number(item.hash)))} · ${item.hash}${item.rolled ? '' : ` · ${localizeText('fixed roll', state.language)}`}</option>`).join('')
+    ? groupedMatches.map(({ tier, items }) => `<optgroup label="${escapeHTML(localizeText(`Tier ${['I', 'II', 'III'][tier - 1]}`, state.language))}">${items.map((item) => `<option value="${item.hash}"${item === selected ? ' selected' : ''}>${escapeHTML(summonName(Number(item.hash)))} · ${item.hash}${item.rolled ? '' : ` · ${localizeText('fixed roll', state.language)}`}</option>`).join('')}</optgroup>`).join('')
     : '<option value="">No matching summons</option>'
   const mainOptions = (selected?.mainTraits ?? []).map((entry) => `<option value="${entry.hash}"${entry === main ? ' selected' : ''}>${escapeHTML(traitLabel(Number(entry.hash)))}</option>`).join('')
   const bonusOptions = (selected?.bonuses ?? []).map((rule) => {
