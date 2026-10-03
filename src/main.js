@@ -15,6 +15,7 @@ import {
   validateCustomInventoryAddition,
 } from './save-format.js'
 import { INVENTORY_CATALOG } from './inventory-catalog.js'
+import { isInventoryCatalogForm } from './inventory-form-routing.js'
 import { MATERIAL_ITEMS_BY_HASH } from './material-catalog.js'
 import { SUMMON_CATALOG } from './summon-catalog.js'
 import {
@@ -1046,6 +1047,7 @@ function bindEvents() {
   })
 
   app.querySelectorAll('.raw-add-form').forEach((form) => {
+    if (!isInventoryCatalogForm(form)) return
     form.addEventListener('submit', (event) => queueCatalogInventoryItem(event, form))
     form.querySelector('[data-role="catalog-item"]')?.addEventListener('change', () => refreshCatalogForm(form))
     form.querySelectorAll('[data-role="trait-select"]').forEach((select) => {
