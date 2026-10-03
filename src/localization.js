@@ -132,6 +132,11 @@ const UI_TRANSLATIONS = {
   queued: ['追加予定', '待添加', '待新增'],
   'Search item names, traits, or slot ID': ['アイテム名、特性、スロットIDを検索', '搜索物品名称、词条或槽位 ID', '搜尋物品名稱、詞條或欄位 ID'],
   'Create from item catalog': ['アイテムカタログから作成', '从物品目录创建', '從物品目錄建立'],
+  'Search Sigils by name or primary trait': ['ジーン名または主特性で検索', '按因子名称或主词条搜索', '依因子名稱或主詞條搜尋'],
+  'Search the catalog by Sigil name or primary trait. Results are grouped by primary trait.': ['ジーン名または主特性で検索できます。結果は主特性ごとにまとまります。', '可按因子名称或主词条搜索目录，结果按主词条分组。', '可依因子名稱或主詞條搜尋目錄，結果依主詞條分組。'],
+  'No Sigils match this search.': ['一致するジーンはありません。', '没有符合条件的因子。', '沒有符合條件的因子。'],
+  'Current selection': ['現在の選択', '当前选择', '目前選擇'],
+  'Type to search Sigils': ['検索してジーンを選択', '输入搜索因子', '輸入搜尋因子'],
   'Select named items and traits. Their save hashes are filled in automatically. Trait combinations are not checked for in-game legality.': ['アイテムと特性を選択すると、セーブデータ用のハッシュが自動入力されます。特性の組み合わせがゲーム内で有効かは検証されません。', '选择物品和词条后会自动填入存档哈希。不会检查词条组合在游戏中是否合法。', '選擇物品與詞條後會自動填入存檔雜湊值。不會檢查詞條組合在遊戲中是否合法。'],
   'For selectable + Sigils, all cataloged traits are available as the second trait, including combinations produced by Sigil Synthesis outside the natural drop pool. Trait combinations are not checked for in-game legality.': ['第2特性を選べる＋付きジーンでは、自然ドロップの特性プール外でもジーン合成で作れる組み合わせに対応するため、カタログ内の全特性を第2特性に選択できます。ゲーム内で有効な組み合わせかは検証されません。', '对于可选副词条的“+”因子，副词条可以从全部已收录词条中选择，因此也能填写通过因子合成得到、但不在自然掉落词条池中的组合。不会检查组合在游戏中是否合法。', '對於可選副詞條的「+」因子，副詞條可以從全部已收錄詞條中選擇，因此也能填入透過因子合成取得、但不在自然掉落詞條池中的組合。不會檢查組合在遊戲中是否合法。'],
   'The item catalog is unavailable.': ['アイテムカタログを利用できません。', '物品目录不可用。', '物品目錄無法使用。'],
@@ -145,6 +150,7 @@ const UI_TRANSLATIONS = {
   'WRIGHTSTONE TYPE': ['加護の種類', '辉石类型', '輝石類型'],
   QUANTITY: ['個数', '数量', '數量'],
   'SIGIL LEVEL': ['ジーンレベル', '因子等级', '因子等級'],
+  'Sets the Sigil and all its trait levels.': ['ジーンとすべての特性のレベルを設定します。', '同时设置因子等级和所有词条等级。', '同時設定因子等級與所有詞條等級。'],
   'PRIMARY TRAIT': ['主特性', '主词条', '主詞條'],
   'PRIMARY TRAIT ·': ['主特性 ·', '主词条 ·', '主詞條 ·'],
   'Choose an item to see its primary trait': ['アイテムを選ぶと主特性が表示されます', '选择物品后显示主词条', '選擇物品後顯示主詞條'],
@@ -436,6 +442,10 @@ function translateDynamicText(text, language) {
   if (match) return [`${match[1]} 件中100件を表示中。名前や特性を検索して絞り込んでください。`, `显示 ${match[1]} 条匹配结果中的前 100 条。请按物品名称或词条缩小范围。`, `顯示 ${match[1]} 筆符合結果中的前 100 筆。請依物品名稱或詞條縮小範圍。`][index]
   match = text.match(/^Showing ([\d,]+) of ([\d,]+) item matches\.$/)
   if (match) return [`${match[2]} 件中${match[1]}件を表示中`, `已显示 ${match[1]} 条，共 ${match[2]} 条匹配结果`, `已顯示 ${match[1]} 筆，共 ${match[2]} 筆符合結果`][index]
+  match = text.match(/^Showing ([\d,]+) of ([\d,]+) matching Sigils\. Add another word to narrow\.$/)
+  if (match) return [`一致するジーン${match[2]}件中${match[1]}件を表示中。検索語を追加して絞り込んでください。`, `显示 ${match[1]} 条，共 ${match[2]} 条符合的因子。可增加关键词缩小范围。`, `已顯示 ${match[1]} 筆，共 ${match[2]} 筆符合的因子。可增加關鍵字縮小範圍。`][index]
+  match = text.match(/^([\d,]+) matching Sigils · grouped by primary trait\.$/)
+  if (match) return [`主特性ごとに分類されたジーンが${match[1]}件見つかりました。`, `找到 ${match[1]} 个因子，结果按主词条分组。`, `找到 ${match[1]} 個因子，結果依主詞條分組。`][index]
   match = text.match(/^Level (\d+) · (.+)$/)
   if (match) return [`レベル ${match[1]} · ${match[2]}`, `等级 ${match[1]} · ${match[2]}`, `等級 ${match[1]} · ${match[2]}`][index]
   match = text.match(/^LV (\d+)(.*)$/)

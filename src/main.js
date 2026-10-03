@@ -34,6 +34,7 @@ import {
 
 const app = document.querySelector('#app')
 const ITEM_LIST_PAGE_SIZE = 100
+const SIGIL_CATALOG_RESULT_LIMIT = 100
 const state = {
   fileName: '',
   bytes: null,
@@ -140,6 +141,47 @@ function optionsForSigil(item) {
 
 function primaryTraitFor(item) {
   return traitForHash(Number(item.primaryTraitHash))
+}
+
+function sigilSearchText(item) {
+  const itemNames = allInventoryTermNames(item.name, 'sigil')
+  const traitNames = allInventoryTermNames(item.primaryTraitName, 'trait')
+  const secondaryKind = item.fixedSecondary
+    ? 'fixed secondary'
+    : (item.secondaryTraitHashes?.length ? 'selectable secondary' : '')
+  return [...itemNames, ...traitNames, item.id, item.hash, secondaryKind].join(' ').toLocaleLowerCase()
+}
+
+function sigilCatalogResults(search) {
+  const terms = search.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean)
+  if (!terms.length) return []
+  const collator = new Intl.Collator(state.language === 'ja' ? 'ja' : state.language, { sensitivity: 'base', numeric: true })
+  return INVENTORY_CATALOG.sigils
+    .filter((item) => {
+      const searchable = sigilSearchText(item)
+      return terms.every((term) => searchable.includes(term))
+    })
+    .sort((left, right) => {
+      const traitOrder = collator.compare(traitLabel(Number(left.primaryTraitHash)), traitLabel(Number(right.primaryTraitHash)))
+      return traitOrder || collator.compare(itemLabel('sigil', Number(left.hash)), itemLabel('sigil', Number(right.hash)))
+    })
+}
+
+function sigilCatalogOptions(results, selectedItem, search) {
+  const visible = results.slice(0, SIGIL_CATALOG_RESULT_LIMIT)
+  const groups = new Map()
+  for (const entry of visible) {
+    const key = String(entry.primaryTraitHash)
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key).push(entry)
+  }
+  const selectedIsVisible = visible.some((entry) => entry.id === selectedItem?.id)
+  const selectedMarkup = selectedItem && !selectedIsVisible
+    ? `<optgroup label="${escapeHTML(localizeText('Current selection', state.language))}"><option value="${escapeHTML(selectedItem.id)}" selected>${escapeHTML(itemLabel('sigil', Number(selectedItem.hash)))}</option></optgroup>`
+    : ''
+  const groupedMarkup = [...groups].map(([traitHash, entries]) => `<optgroup label="${escapeHTML(traitLabel(Number(traitHash)))}">${entries.map((entry) => `<option value="${escapeHTML(entry.id)}"${entry.id === selectedItem?.id ? ' selected' : ''}>${escapeHTML(itemLabel('sigil', Number(entry.hash)))}</option>`).join('')}</optgroup>`).join('')
+  const prompt = search.trim() ? 'Choose a Sigil' : 'Type to search Sigils'
+  return `<option value="" disabled${selectedItem ? '' : ' selected'}>${escapeHTML(localizeText(prompt, state.language))}</option>${selectedMarkup}${groupedMarkup}`
 }
 
 function selectedCharacter() {
@@ -464,18 +506,28 @@ function renderCatalogForm(kind) {
   const remaining = Math.max(0, inventorySlotsAfterQueue(kind))
   const disabled = !state.parsed.checksumValid || remaining <= 0 || bucket.maxCount.ambiguous || bucket.serialAmbiguous
   const quantity = Math.max(1, Number.parseInt(draft.quantity, 10) || 1)
-  const itemOptions = `<option value="" disabled${item ? '' : ' selected'}>Choose a ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'}</option>${items.map((entry) => `<option value="${escapeHTML(entry.id)}"${entry.id === itemId ? ' selected' : ''}>${escapeHTML(itemLabel(kind, entry.hash))}</option>`).join('')}`
+  const sigilSearch = String(draft.catalogSearch ?? '')
+  const sigilResults = kind === 'sigil' ? sigilCatalogResults(sigilSearch) : []
+  const itemOptions = kind === 'sigil'
+    ? sigilCatalogOptions(sigilResults, item, sigilSearch)
+    : `<option value="" disabled${item ? '' : ' selected'}>Choose a Wrightstone</option>${items.map((entry) => `<option value="${escapeHTML(entry.id)}"${entry.id === itemId ? ' selected' : ''}>${escapeHTML(itemLabel(kind, entry.hash))}</option>`).join('')}`
+  const locale = state.language === 'ja' ? 'ja-JP' : state.language === 'zh-CN' ? 'zh-CN' : state.language === 'zh-TW' ? 'zh-TW' : 'en-US'
+  const sigilSearchStatus = !sigilSearch.trim()
+    ? localizeText('Search the catalog by Sigil name or primary trait. Results are grouped by primary trait.', state.language)
+    : sigilResults.length === 0
+      ? localizeText('No Sigils match this search.', state.language)
+      : sigilResults.length > SIGIL_CATALOG_RESULT_LIMIT
+        ? localizeText(`Showing ${SIGIL_CATALOG_RESULT_LIMIT} of ${sigilResults.length.toLocaleString(locale)} matching Sigils. Add another word to narrow.`, state.language)
+        : localizeText(`${sigilResults.length.toLocaleString(locale)} matching Sigils · grouped by primary trait.`, state.language)
   const allTraits = INVENTORY_CATALOG.traits
   const secondaryTraits = kind === 'sigil' ? (item ? optionsForSigil(item) : []) : allTraits
   const secondaryDisabled = kind === 'sigil' && (!item || secondaryTraits.length === 0)
-  const secondTraitLabel = kind === 'sigil' ? 'SECONDARY TRAIT' : 'ADDITIONAL TRAIT 1'
   const secondaryHash = item?.fixedSecondary ? item.secondaryTraitHashes[0] : String(draft.trait1Hash ?? '')
   const secondaryTrait = secondaryHash ? traitForHash(Number(secondaryHash)) : null
   const thirdTraitHash = String(draft.trait2Hash ?? '')
   const thirdTraitDefinition = thirdTraitHash ? traitForHash(Number(thirdTraitHash)) : null
   const primaryLevel = String(draft.trait0Level ?? '1')
   const secondaryLevel = String(draft.trait1Level ?? '')
-  const secondaryLevelRequired = Boolean(item?.fixedSecondary && secondaryTraits.length)
   const thirdTrait = kind === 'wrightstone' ? `<div class="raw-lane">
     <label class="raw-field"><span>ADDITIONAL TRAIT 2</span><select data-role="trait-select" name="trait2Hash">${traitOptions(allTraits, true, String(draft.trait2Hash ?? ''))}</select></label>
     <label class="raw-field"><span>LEVEL 3</span><input name="trait2Level" type="number" min="1" max="${thirdTraitDefinition?.maxLevel ?? 50}" value="${escapeHTML(String(draft.trait2Level ?? ''))}" placeholder="Optional" /></label>
@@ -483,20 +535,26 @@ function renderCatalogForm(kind) {
   const extraTrait = kind === 'sigil'
     ? `<select data-role="sigil-secondary" name="trait1Hash" ${secondaryDisabled ? 'disabled' : ''}>${traitOptions(secondaryTraits, !item?.fixedSecondary, secondaryHash)}</select>`
     : `<select data-role="trait-select" name="trait1Hash">${traitOptions(allTraits, true, String(draft.trait1Hash ?? ''))}</select>`
-  const additionalLane = `<div class="raw-lane">
-    <label class="raw-field"><span>${secondTraitLabel}</span>${extraTrait}</label>
-    <label class="raw-field"><span>LEVEL 2</span><input name="trait1Level" type="number" min="1" max="${secondaryTrait?.maxLevel ?? 50}" value="${escapeHTML(secondaryLevel)}" placeholder="Optional" ${secondaryDisabled ? 'disabled' : ''}${secondaryLevelRequired ? 'required' : ''} /></label>
-  </div>`
-  return `<form class="raw-add-form" data-kind="${kind}">
-    <div class="raw-lane">
-      <label class="raw-field"><span>${kind === 'sigil' ? 'SIGIL TYPE' : 'WRIGHTSTONE TYPE'} *</span><select data-role="catalog-item" name="catalogItemId" required>${itemOptions}</select></label>
-      <label class="raw-field"><span>QUANTITY *</span><input name="quantity" type="number" min="1" max="${Math.max(1, remaining)}" value="${quantity}" ${disabled ? 'disabled' : 'required'} /></label>
-    </div>
-    ${kind === 'sigil' ? `<label class="raw-field"><span>SIGIL LEVEL *</span><input name="level" type="number" min="1" max="15" value="${escapeHTML(String(draft.level ?? '15'))}" required /></label>` : ''}
-    <div class="raw-lane">
+  const additionalLane = kind === 'sigil'
+    ? `<label class="raw-field"><span>SECONDARY TRAIT</span>${extraTrait}</label>`
+    : `<div class="raw-lane">
+      <label class="raw-field"><span>ADDITIONAL TRAIT 1</span>${extraTrait}</label>
+      <label class="raw-field"><span>LEVEL 2</span><input name="trait1Level" type="number" min="1" max="${secondaryTrait?.maxLevel ?? 50}" value="${escapeHTML(secondaryLevel)}" placeholder="Optional" /></label>
+    </div>`
+  const primaryTraitField = kind === 'sigil'
+    ? `<label class="raw-field"><span>PRIMARY TRAIT · <span data-role="primary-trait-name">${escapeHTML(primaryTrait?.name ?? 'Choose an item to see its primary trait')}</span></span><input name="trait0Hash" type="hidden" value="${primaryTrait?.hash ?? ''}" /></label>`
+    : `<div class="raw-lane">
       <label class="raw-field"><span>PRIMARY TRAIT · <span data-role="primary-trait-name">${escapeHTML(primaryTrait?.name ?? 'Choose an item to see its primary trait')}</span></span><input name="trait0Hash" type="hidden" value="${primaryTrait?.hash ?? ''}" /></label>
       <label class="raw-field"><span>LEVEL 1 *</span><input data-role="primary-level" name="trait0Level" type="number" min="1" max="${primaryTrait?.maxLevel ?? 50}" value="${escapeHTML(primaryLevel)}" required /></label>
+    </div>`
+  return `<form class="raw-add-form" data-kind="${kind}">
+    ${kind === 'sigil' ? `<label class="search-box sigil-catalog-search"><span>⌕</span><input data-role="catalog-search" name="catalogSearch" type="search" placeholder="Search Sigils by name or primary trait" value="${escapeHTML(sigilSearch)}" autocomplete="off" /></label><p id="sigil-search-status" class="catalog-search-status" aria-live="polite">${escapeHTML(sigilSearchStatus)}</p>` : ''}
+    <div class="raw-lane">
+      <label class="raw-field"><span>${kind === 'sigil' ? 'SIGIL TYPE' : 'WRIGHTSTONE TYPE'} *</span><select data-role="catalog-item" name="catalogItemId"${kind === 'sigil' ? ' aria-describedby="sigil-search-status"' : ''} required>${itemOptions}</select></label>
+      <label class="raw-field"><span>QUANTITY *</span><input name="quantity" type="number" min="1" max="${Math.max(1, remaining)}" value="${quantity}" ${disabled ? 'disabled' : 'required'} /></label>
     </div>
+    ${kind === 'sigil' ? `<label class="raw-field sigil-level-field"><span>SIGIL LEVEL *</span><input name="level" type="number" min="1" max="15" value="${escapeHTML(String(draft.level ?? '15'))}" required /><small class="raw-field-hint">Sets the Sigil and all its trait levels.</small></label>` : ''}
+    ${primaryTraitField}
     <div class="raw-lanes">${additionalLane}${thirdTrait}</div>
     <button class="primary-button raw-submit" type="submit" ${disabled ? 'disabled' : ''}>Add ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'}</button>
   </form>`
@@ -513,6 +571,7 @@ function rememberCatalogForm(form) {
     trait1Level: value('trait1Level'),
     trait2Hash: value('trait2Hash'),
     trait2Level: value('trait2Level'),
+    catalogSearch: value('catalogSearch'),
   }
 }
 
@@ -526,33 +585,23 @@ function refreshCatalogForm(form) {
   form.querySelector('[name="trait0Hash"]').value = primary.hash
   form.querySelector('[data-role="primary-trait-name"]').textContent = traitLabel(Number(primary.hash))
   const primaryLevel = form.querySelector('[data-role="primary-level"]')
-  primaryLevel.max = primary.maxLevel
-  if (Number(primaryLevel.value) > primary.maxLevel) primaryLevel.value = primary.maxLevel
+  if (primaryLevel) {
+    primaryLevel.max = primary.maxLevel
+    if (Number(primaryLevel.value) > primary.maxLevel) primaryLevel.value = primary.maxLevel
+  }
   if (kind !== 'sigil') {
     localizeDOM(form, state.language)
     return
   }
 
   const secondarySelect = form.querySelector('[data-role="sigil-secondary"]')
-  const secondaryLevel = form.querySelector('[name="trait1Level"]')
   const selectedHash = secondarySelect.value
   const allowedTraits = optionsForSigil(item)
   secondarySelect.innerHTML = traitOptions(allowedTraits, !item.fixedSecondary, item.fixedSecondary ? item.secondaryTraitHashes[0] : '')
   secondarySelect.disabled = allowedTraits.length === 0
   if (item.fixedSecondary && allowedTraits.length) secondarySelect.value = item.secondaryTraitHashes[0]
   else if (allowedTraits.some((trait) => trait.hash === selectedHash)) secondarySelect.value = selectedHash
-  else {
-    secondarySelect.value = ''
-    secondaryLevel.value = ''
-  }
-  secondaryLevel.disabled = allowedTraits.length === 0
-  secondaryLevel.required = Boolean(item.fixedSecondary && allowedTraits.length)
-  if (allowedTraits.length === 0) secondaryLevel.value = ''
-  const secondaryTrait = traitForHash(Number(secondarySelect.value))
-  if (secondaryTrait) {
-    secondaryLevel.max = secondaryTrait.maxLevel
-    if (Number(secondaryLevel.value) > secondaryTrait.maxLevel) secondaryLevel.value = secondaryTrait.maxLevel
-  } else secondaryLevel.max = 50
+  else secondarySelect.value = ''
   localizeDOM(form, state.language)
 }
 
@@ -934,9 +983,24 @@ function bindEvents() {
     form.querySelectorAll('[data-role="trait-select"]').forEach((select) => {
       select.addEventListener('change', () => updateTraitLevelLimit(select))
     })
-    form.querySelector('[data-role="sigil-secondary"]')?.addEventListener('change', (event) => updateTraitLevelLimit(event.currentTarget))
     form.addEventListener('input', () => rememberCatalogForm(form))
     form.addEventListener('change', () => rememberCatalogForm(form))
+  })
+
+  app.querySelectorAll('[data-role="catalog-search"]').forEach((searchInput) => {
+    searchInput.addEventListener('input', (event) => {
+      const form = event.currentTarget.closest('.raw-add-form')
+      if (!form) return
+      rememberCatalogForm(form)
+      const kind = form.dataset.kind
+      state.catalogDrafts[kind] = { ...state.catalogDrafts[kind], catalogSearch: event.currentTarget.value }
+      state.openRawKind = kind
+      const caret = event.currentTarget.selectionStart
+      render()
+      const replacement = app.querySelector(`.raw-add-form[data-kind="${kind}"] [data-role="catalog-search"]`)
+      replacement?.focus({ preventScroll: true })
+      replacement?.setSelectionRange(caret, caret)
+    })
   })
 
   app.querySelectorAll('[data-action]').forEach((element) => {
@@ -1097,10 +1161,15 @@ function queueCatalogInventoryItem(event, form) {
     if (kind === 'sigil' && item.fixedSecondary && secondaryHash !== item.secondaryTraitHashes[0]) {
       throw new Error('This Sigil requires its fixed secondary trait.')
     }
-    const lanes = Array.from({ length: kind === 'sigil' ? 2 : 3 }, (_, index) => ({
-      hash: index === 0 ? primaryTrait.hash : data.get(`trait${index}Hash`),
-      level: data.get(`trait${index}Level`),
-    }))
+    const lanes = Array.from({ length: kind === 'sigil' ? 2 : 3 }, (_, index) => {
+      const hash = index === 0 ? primaryTrait.hash : data.get(`trait${index}Hash`)
+      return {
+        hash,
+        level: kind === 'sigil'
+          ? (hash ? data.get('level') : '')
+          : data.get(`trait${index}Level`),
+      }
+    })
     const addition = validateCustomInventoryAddition(kind, {
       hash: item.hash,
       level: data.get('level'),
