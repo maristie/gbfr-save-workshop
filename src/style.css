@@ -185,7 +185,7 @@ code { font: .68rem var(--mono); color:#adc6c7; }
 .mastery-points-form { display:flex; align-items:flex-end; gap:10px; max-width:440px; }
 .mastery-points-form .raw-field { flex:1; }
 .mastery-points-form input { height:38px; }
-.mastery-points-form .raw-submit { min-height:38px; }
+.mastery-points-form .raw-submit { min-height:38px; align-self:flex-end; }
 .mastery-points-pending { display:flex; justify-content:space-between; gap:12px; max-width:440px; margin:13px 0 0; padding-top:11px; border-top:1px solid rgba(194,216,226,.08); color:#879a9e; font-size:.64rem; }
 .mastery-points-pending strong { color:var(--gold); font:500 .67rem var(--mono); }
 .inventory-card-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
