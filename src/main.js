@@ -19,6 +19,10 @@ import { isInventoryCatalogForm } from './inventory-form-routing.js'
 import { MATERIAL_ITEMS_BY_HASH } from './material-catalog.js'
 import { SUMMON_CATALOG } from './summon-catalog.js'
 import {
+  checkInventoryAdditionProducibility,
+  checkSummonAdditionProducibility,
+} from './item-legality.js'
+import {
   allInventoryTermNames,
   characterSearchNames,
   initialLanguage,
@@ -48,6 +52,7 @@ const state = {
   masterPointsDraft: null,
   inventoryAdds: [],
   inventoryRemovals: [],
+  legalityReports: { inventory: null, summons: null },
   summonAdds: [],
   summonDraft: {},
   summonFilter: '',
@@ -455,8 +460,8 @@ function renderInventoryCategory(kind) {
     ? `<p class="inventory-limit">Showing 100 of ${matched.length.toLocaleString()} matches. Refine the item name or trait search to narrow the list.</p>`
     : ''
   const catalogHelp = kind === 'sigil'
-    ? 'For selectable + Sigils, all cataloged traits are available as the second trait, including combinations produced by Sigil Synthesis outside the natural drop pool. Trait combinations are not checked for in-game legality.'
-    : 'Select named items and traits. Their save hashes are filled in automatically. Trait combinations are not checked for in-game legality.'
+    ? localizeText('Selectable + Sigils allow every cataloged trait as a candidate. Use the queue check for combinations outside their natural drop pool.', state.language)
+    : localizeText('Select named items and traits, then use the optional queue check to review producibility.', state.language)
   return `<section class="inventory-card">
     <div class="inventory-card-heading"><div><p class="eyebrow">${label.toUpperCase()}</p><h3>${title}</h3></div><span class="inventory-capacity">${capText}</span></div>
     <p class="inventory-help">Copy an owned entry, delete unassigned Sigils or inactive Wrightstones, or choose one by name from the catalog. New copies go into an empty slot and are left unassigned.</p>
@@ -684,10 +689,12 @@ function renderInventoryPanel() {
   const queued = state.inventoryAdds
   const removals = state.inventoryRemovals
   const quantityChanges = itemQuantityChanges()
+  const legalityReport = state.legalityReports.inventory
   const queuedMarkup = queued.length || removals.length || quantityChanges.length ? `${queued.map((addition) => `<div class="queue-item">
     <span><strong>${escapeHTML(itemLabel(addition.kind, addition.hash))}</strong></span>
     <small>${addition.kind === 'sigil' ? `Lv ${addition.level}` : `${addition.lanes.filter((lane) => lane.hash !== 0x887ae0b0 && lane.hash !== 0).length} traits`}${addition.sourceUnitId ? ` · copied from ${addition.sourceUnitId}` : ' · catalog selection'}</small>
     <button class="queue-remove" data-action="remove-queued" data-draft-id="${addition.draftId}" type="button" aria-label="Remove queued item">×</button>
+    ${legalityResultMarkup(legalityReport?.get(addition.draftId))}
   </div>`).join('')}${removals.map((removal) => {
     const row = inventoryBucket(removal.kind).rows.find((entry) => entry.unitId === removal.unitId)
     return `<div class="queue-item is-removal">
@@ -707,7 +714,7 @@ function renderInventoryPanel() {
   return `<section class="inventory-workspace">
     <div class="inventory-intro"><div><p class="eyebrow">BAG INVENTORY</p><h2>Edit bag items.</h2></div><p>Set quantities for stackable items, or add and remove Sigils and Wrightstones. The editor checks each changed record and the save checksum before download.</p></div>
     <div class="inventory-grid">${renderInventoryCategory('sigil')}${renderInventoryCategory('wrightstone')}${renderItemStacks()}</div>
-    <section class="queue-panel"><div><p class="eyebrow">PENDING CHANGES</p><h3>${pendingCount} change${pendingCount === 1 ? '' : 's'} queued</h3></div><div class="queue-list">${queuedMarkup}</div></section>
+    <section class="queue-panel"><div class="queue-panel-heading"><div><p class="eyebrow">PENDING CHANGES</p><h3>${pendingCount} change${pendingCount === 1 ? '' : 's'} queued</h3></div><button class="subtle-button legality-check-button" data-action="check-inventory-producibility" type="button" ${queued.length ? '' : 'disabled'}>${escapeHTML(localizeText('Check producibility', state.language))}</button><p class="legality-check-help">${escapeHTML(localizeText('Optional check against known game data. Incomplete rules show Needs review; edits and downloads remain available.', state.language))}</p></div><div class="queue-list">${legalitySummaryMarkup(legalityReport)}${queuedMarkup}</div></section>
   </section>`
 }
 
@@ -755,7 +762,8 @@ function renderSummonsPanel() {
   }).join('')
   const owned = bucket.supported ? bucket.rows.filter((row) => !row.empty).sort((a, b) => b.slotId - a.slotId).slice(0, 12) : []
   const ownedMarkup = owned.length ? owned.map((row) => `<article class="inventory-row"><div class="inventory-item-copy"><strong>${escapeHTML(summonName(row.typeHash))}</strong><small>${localizeText('Slot', state.language)} ${row.slotId} · ${localizeText('Field 1460', state.language)} ${row.opaque1460}</small><span>${escapeHTML(traitLabel(row.mainTraitHash))} Lv ${row.mainLevel} · ${escapeHTML(summonBonusName(row.bonusHash))} Lv ${row.bonusLevel}</span></div></article>`).join('') : '<p class="inventory-empty">No summon stones in this save yet.</p>'
-  const queuedMarkup = state.summonAdds.length ? state.summonAdds.map((item) => `<div class="queue-item"><span><strong>${escapeHTML(summonName(item.typeHash))}</strong></span><small>${escapeHTML(traitLabel(item.mainTraitHash))} Lv ${item.mainLevel} · ${escapeHTML(summonBonusName(item.bonusHash))} Lv ${item.bonusLevel} · ${localizeText('Field 1460', state.language)} ${item.field1460}</small><button class="queue-remove" data-action="remove-summon" data-draft-id="${item.draftId}" type="button" aria-label="Remove queued summon">×</button></div>`).join('') : '<p class="queue-empty">No summon additions queued.</p>'
+  const summonLegalityReport = state.legalityReports.summons
+  const queuedSummonMarkup = state.summonAdds.length ? state.summonAdds.map((item) => `<div class="queue-item"><span><strong>${escapeHTML(summonName(item.typeHash))}</strong></span><small>${escapeHTML(traitLabel(item.mainTraitHash))} Lv ${item.mainLevel} · ${escapeHTML(summonBonusName(item.bonusHash))} Lv ${item.bonusLevel} · ${localizeText('Field 1460', state.language)} ${item.field1460}</small><button class="queue-remove" data-action="remove-summon" data-draft-id="${item.draftId}" type="button" aria-label="Remove queued summon">×</button>${legalityResultMarkup(summonLegalityReport?.get(item.draftId))}</div>`).join('') : '<p class="queue-empty">No summon additions queued.</p>'
   const unavailable = bucket.supported
     ? bucket.unlocked ? '' : '<div class="alert alert-warning"><strong>Summons are not unlocked in this save.</strong> Obtain your first summon in Endless Ragnarok, then reopen the save.</div>'
     : `<div class="alert alert-warning"><strong>Summon creation is unavailable for this save.</strong> ${escapeHTML(bucket.reason)}</div>`
@@ -777,8 +785,25 @@ function renderSummonsPanel() {
       </section>
       <section class="inventory-card summon-owned-card"><div class="inventory-card-heading"><div><p class="eyebrow">OWNED SUMMONS</p><h3>Recent stones</h3></div></div><div class="inventory-list">${ownedMarkup}</div></section>
     </div>
-    <section class="queue-panel"><div><p class="eyebrow">PENDING ADDITIONS</p><h3>${state.summonAdds.length} ${localizeText('queued', state.language)}</h3></div><div class="queue-list">${queuedMarkup}</div></section>
+    <section class="queue-panel"><div class="queue-panel-heading"><div><p class="eyebrow">PENDING ADDITIONS</p><h3>${state.summonAdds.length} ${localizeText('queued', state.language)}</h3></div><button class="subtle-button legality-check-button" data-action="check-summon-producibility" type="button" ${state.summonAdds.length ? '' : 'disabled'}>${escapeHTML(localizeText('Check producibility', state.language))}</button><p class="legality-check-help">${escapeHTML(localizeText('Optional check against known game data. Incomplete rules show Needs review; edits and downloads remain available.', state.language))}</p></div><div class="queue-list">${legalitySummaryMarkup(summonLegalityReport)}${queuedSummonMarkup}</div></section>
   </section>`
+}
+
+function legalityResultMarkup(report) {
+  if (!report) return ''
+  const labels = {
+    match: 'Matches catalog rules',
+    conflict: 'Known conflict',
+    review: 'Needs review',
+  }
+  return `<p class="queue-legality-result is-${report.status}"><strong>${escapeHTML(localizeText(labels[report.status] ?? 'Needs review', state.language))}</strong><span>${escapeHTML(localizeText(report.message, state.language))}</span></p>`
+}
+
+function legalitySummaryMarkup(reports) {
+  if (!reports?.size) return ''
+  const counts = { match: 0, conflict: 0, review: 0 }
+  for (const report of reports.values()) counts[report.status] = (counts[report.status] ?? 0) + 1
+  return `<p class="legality-summary" aria-live="polite"><strong>${escapeHTML(localizeText('Checks run', state.language))}: ${reports.size}</strong><span>${escapeHTML(localizeText('Catalog matches', state.language))}: ${counts.match}</span><span>${escapeHTML(localizeText('Known conflicts', state.language))}: ${counts.conflict}</span><span>${escapeHTML(localizeText('Needs review', state.language))}: ${counts.review}</span></p>`
 }
 
 function renderMasterPointsPanel() {
@@ -1098,6 +1123,18 @@ function bindEvents() {
       if (action === 'restore-removal') restoreInventoryRemoval(event.currentTarget.dataset.kind, Number(event.currentTarget.dataset.unitId))
       if (action === 'remove-queued') removeQueuedAddition(Number(event.currentTarget.dataset.draftId))
       if (action === 'remove-summon') removeQueuedSummon(Number(event.currentTarget.dataset.draftId))
+      if (action === 'check-inventory-producibility') {
+        state.legalityReports.inventory = new Map(state.inventoryAdds.map((addition) => [addition.draftId, checkInventoryAdditionProducibility(addition)]))
+        state.error = ''
+        state.notice = ''
+        render()
+      }
+      if (action === 'check-summon-producibility') {
+        state.legalityReports.summons = new Map(state.summonAdds.map((addition) => [addition.draftId, checkSummonAdditionProducibility(addition)]))
+        state.error = ''
+        state.notice = ''
+        render()
+      }
       if (action === 'clear-item-quantity') {
         const unitId = Number(event.currentTarget.dataset.unitId)
         state.itemQuantityDrafts = Object.fromEntries(Object.entries(state.itemQuantityDrafts).filter(([key]) => Number(key) !== unitId))
@@ -1196,6 +1233,7 @@ function queueInventoryCopy(kind, unitId) {
     lanes: row.lanes.map(({ hash, level }) => ({ hash, level })),
     sourceUnitId: unitId,
   })
+  state.legalityReports.inventory = null
   render()
 }
 
@@ -1262,6 +1300,7 @@ function queueCatalogInventoryItem(event, form) {
         lanes: addition.lanes.map((lane) => ({ ...lane })),
       })
     }
+    state.legalityReports.inventory = null
     state.activeTab = 'inventory'
     state.openRawKind = kind
     state.error = ''
@@ -1276,6 +1315,7 @@ function queueCatalogInventoryItem(event, form) {
 
 function removeQueuedAddition(draftId) {
   state.inventoryAdds = state.inventoryAdds.filter((addition) => addition.draftId !== draftId)
+  state.legalityReports.inventory = null
   state.error = ''
   state.notice = ''
   render()
@@ -1322,6 +1362,7 @@ function queueSummonAddition(event, form) {
     }
     if (!inventory.registrations.has(addition.typeHash)) throw new Error('This summon type is not registered in the save catalog.')
     for (let index = 0; index < quantity; index += 1) state.summonAdds.push({ ...addition, draftId: state.nextDraftId++ })
+    state.legalityReports.summons = null
     state.error = ''
     state.notice = ''
   } catch (error) {
@@ -1334,6 +1375,7 @@ function queueSummonAddition(event, form) {
 
 function removeQueuedSummon(draftId) {
   state.summonAdds = state.summonAdds.filter((addition) => addition.draftId !== draftId)
+  state.legalityReports.summons = null
   state.error = ''
   state.notice = ''
   render()
@@ -1402,6 +1444,7 @@ function resetEdits() {
   }
   state.inventoryAdds = []
   state.inventoryRemovals = []
+  state.legalityReports = { inventory: null, summons: null }
   state.summonAdds = []
   state.itemQuantityDrafts = {}
   state.itemQuantityInputDrafts = {}
@@ -1428,6 +1471,7 @@ async function loadFile(file) {
     state.activeTab = 'overmastery'
     state.inventoryAdds = []
     state.inventoryRemovals = []
+    state.legalityReports = { inventory: null, summons: null }
     state.summonAdds = []
     state.summonDraft = {}
     state.summonFilter = ''
@@ -1447,6 +1491,7 @@ async function loadFile(file) {
     state.selectedUnitId = null
     state.inventoryAdds = []
     state.inventoryRemovals = []
+    state.legalityReports = { inventory: null, summons: null }
     state.summonAdds = []
     state.summonDraft = {}
     state.summonFilter = ''

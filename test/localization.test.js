@@ -70,3 +70,22 @@ test('static and dynamic interface text is localized', () => {
   assert.equal(localizeText('Unmapped label', 'zh-TW'), 'Unmapped label')
   assert.equal(localizeText('Open save', 'en'), 'Open save')
 })
+
+test('producibility check labels and guidance are translated in every supported language', () => {
+  const labels = [
+    'Check producibility',
+    'Optional check against known game data. Incomplete rules show Needs review; edits and downloads remain available.',
+    'Matches catalog rules',
+    'Known conflict',
+    'Needs review',
+    'Checks run',
+    'Catalog matches',
+    'Known conflicts',
+  ]
+
+  for (const language of ['ja', 'zh-CN', 'zh-TW']) {
+    for (const label of labels) {
+      assert.notEqual(localizeText(label, language), label, `${label} is missing a ${language} translation`)
+    }
+  }
+})
