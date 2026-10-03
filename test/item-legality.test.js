@@ -10,6 +10,12 @@ import {
 
 const EMPTY_HASH = 0x887ae0b0
 
+function sigilByHash(hash) {
+  const item = INVENTORY_CATALOG.sigils.find((entry) => Number(entry.hash) === hash)
+  assert.ok(item, `expected Sigil ${hash.toString(16)} in catalog`)
+  return item
+}
+
 function sigilAddition(item, { level = 15, secondaryHash = null, primaryLevel = level } = {}) {
   return {
     kind: 'sigil',
@@ -103,6 +109,62 @@ test('Sigil and trait level mismatches need review', () => {
 
   assert.ok(item, 'expected a cataloged single-trait Sigil')
   assert.equal(checkInventoryAdditionProducibility(sigilAddition(item, { primaryLevel: 14 })).status, 'review')
+})
+
+test('synthesis permits same-category and duplicate traits outside natural pools', () => {
+  const aegis = sigilByHash(0x9c2399da)
+  for (const secondaryHash of [0xe0abfdfe, 0xf372f096, 0xa898e283]) {
+    for (const level of [11, 12, 13, 14, 15]) {
+      assert.deepEqual(checkInventoryAdditionProducibility(sigilAddition(aegis, { level, secondaryHash })), {
+        status: 'match',
+        message: 'The trait pair and Sigil type match a cataloged Sigil Synthesis route.',
+      })
+    }
+  }
+  assert.equal(checkInventoryAdditionProducibility(sigilAddition(aegis, {
+    level: 10, secondaryHash: 0xf372f096,
+  })).status, 'conflict')
+  assert.equal(checkInventoryAdditionProducibility(sigilAddition(aegis, {
+    secondaryHash: 0xf372f096, primaryLevel: 14,
+  })).status, 'review')
+})
+
+test('synthesis can override the fixed secondary on its exact output template', () => {
+  // Damage Cap's synthesis output is a naturally fixed ATK variant, rather
+  // than the selectable-secondary Damage Cap V+ hash.
+  const damageCap = sigilByHash(0xb0cb5c64)
+  assert.equal(damageCap.fixedSecondary, true)
+  for (const secondaryHash of [0x57ab5b10, 0x2fc8fbff, 0xdc584f60]) {
+    assert.equal(checkInventoryAdditionProducibility(sigilAddition(damageCap, { secondaryHash })).status, 'match')
+  }
+  assert.equal(checkInventoryAdditionProducibility(sigilAddition(sigilByHash(0x54d8ea04), {
+    secondaryHash: 0x57ab5b10,
+  })).status, 'review')
+  assert.equal(checkInventoryAdditionProducibility(sigilAddition(sigilByHash(0x36e1c7fc), {
+    secondaryHash: 0x57ab5b10,
+  })).status, 'conflict')
+  assert.equal(checkInventoryAdditionProducibility(sigilAddition(damageCap)).status, 'conflict')
+})
+
+test('synthesis supports Improved Dodge and current Celestial, Fatebreaker, and Divergence outputs', () => {
+  for (const hash of [0x02c1d304, 0xe14e1598, 0x1a5f39d2, 0xf1d8f754]) {
+    assert.equal(checkInventoryAdditionProducibility(sigilAddition(sigilByHash(hash), {
+      secondaryHash: 0x57ab5b10,
+    })).status, 'match')
+  }
+})
+
+test('synthesis does not grant every known trait or every + template a route', () => {
+  const aegis = sigilByHash(0x9c2399da)
+  for (const secondaryHash of [0x4c588c27, 0xee85cd1f, 0xdbe1d775, 0xdeadbeef]) {
+    assert.equal(checkInventoryAdditionProducibility(sigilAddition(aegis, { secondaryHash })).status, 'review')
+  }
+  // IV+ and War Elemental+ are not synthesis outputs, even at level 15.
+  for (const hash of [0x72466f3c, 0x00612b10]) {
+    assert.equal(checkInventoryAdditionProducibility(sigilAddition(sigilByHash(hash), {
+      secondaryHash: 0x57ab5b10,
+    })).status, 'review')
+  }
 })
 
 test('Wrightstone level caps are enforced and otherwise incomplete bonus pools need review', () => {

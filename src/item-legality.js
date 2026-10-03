@@ -1,5 +1,6 @@
 import { INVENTORY_CATALOG } from './inventory-catalog.js'
 import { SUMMON_CATALOG } from './summon-catalog.js'
+import { SYNTHESIS_INPUT_TRAIT_HASHES, SYNTHESIS_OUTPUT_BY_PRIMARY_TRAIT } from './sigil-synthesis-catalog.js'
 
 const EMPTY_HASH = 0x887ae0b0
 const WRIGHTSTONE_LEVEL_CAPS = [20, 15, 10]
@@ -7,6 +8,9 @@ const WRIGHTSTONE_LEVEL_CAPS = [20, 15, 10]
 const sigilsByHash = new Map(INVENTORY_CATALOG.sigils.map((item) => [Number(item.hash) >>> 0, item]))
 const wrightstonesByHash = new Map(INVENTORY_CATALOG.wrightstones.map((item) => [Number(item.hash) >>> 0, item]))
 const traitsByHash = new Set(INVENTORY_CATALOG.traits.map((trait) => Number(trait.hash) >>> 0))
+const synthesisInputTraits = new Set(SYNTHESIS_INPUT_TRAIT_HASHES.map(Number))
+const synthesisOutputs = new Map(Object.entries(SYNTHESIS_OUTPUT_BY_PRIMARY_TRAIT)
+  .map(([traitHash, itemHash]) => [Number(traitHash), Number(itemHash)]))
 const summonsByHash = new Map(SUMMON_CATALOG.summons.map((summon) => [Number(summon.hash) >>> 0, summon]))
 const summonBonusesByHash = new Map(SUMMON_CATALOG.bonuses.map((bonus) => [Number(bonus.hash) >>> 0, bonus]))
 
@@ -106,6 +110,16 @@ export function checkInventoryAdditionProducibility(addition) {
 
   const secondary = inspected.lanes[1]
   const secondaryHashes = (item.secondaryTraitHashes ?? []).map((hash) => Number(hash) >>> 0)
+  // Synthesis chooses two input lanes (including duplicates) and selects the
+  // output template by primary trait. A fixed natural secondary is not binding
+  // on that exact synthesis output template.
+  const naturalPair = !secondary.empty && secondaryHashes.includes(secondary.hash)
+  if (!naturalPair && !secondary.empty && level >= 11
+    && synthesisInputTraits.has(primaryHash)
+    && synthesisInputTraits.has(secondary.hash)
+    && synthesisOutputs.get(primaryHash) === itemHash) {
+    return result('match', 'The trait pair and Sigil type match a cataloged Sigil Synthesis route.')
+  }
   if (item.fixedSecondary) {
     if (secondary.empty || secondary.hash !== secondaryHashes[0]) {
       return result('conflict', 'This Sigil requires its cataloged fixed secondary trait.')

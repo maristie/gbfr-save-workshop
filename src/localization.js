@@ -196,6 +196,7 @@ const UI_TRANSLATIONS = {
   'The Sigil level and trait levels differ; this combination is not covered by the current rules.': ['ジーン本体と特性のレベルが異なります。この組み合わせは現在のルール資料では確認できません。', '因子等级与词条等级不同；当前规则资料无法确认此组合。', '因子等級與詞條等級不同；目前規則資料無法確認此組合。'],
   'This Sigil requires its cataloged fixed secondary trait.': ['このジーンにはカタログに記載された固定の副特性が必要です。', '此因子需要使用目录中记载的固定副词条。', '此因子需要使用目錄中記載的固定副詞條。'],
   'The Sigil matches a cataloged fixed-trait pattern.': ['ジーンがカタログ上の固定特性パターンと一致します。', '因子符合目录中的固定词条组合。', '因子符合目錄中的固定詞條組合。'],
+  'The trait pair and Sigil type match a cataloged Sigil Synthesis route.': ['特性の組み合わせとジーンの種類がカタログ上のジーン合成経路と一致します。', '词条组合和因子类型符合目录中已收录的因子合成路径。', '詞條組合與因子類型符合目錄中已收錄的因子合成途徑。'],
   'This Sigil requires a secondary trait.': ['このジーンには副特性が必要です。', '此因子需要副词条。', '此因子需要副詞條。'],
   'The trait pair matches a cataloged natural Sigil roll pool.': ['特性の組み合わせがカタログ上の自然抽選プールと一致します。', '词条组合符合目录中的自然掉落池。', '詞條組合符合目錄中的自然掉落池。'],
   'This secondary trait is outside the natural roll pool; a Sigil Synthesis route is not confirmed.': ['この副特性は自然抽選プール外です。ジーン合成で入手できるかは未確認です。', '此副词条不在自然掉落池中；尚未确认能否通过因子合成获得。', '此副詞條不在自然掉落池中；尚未確認能否透過因子合成取得。'],

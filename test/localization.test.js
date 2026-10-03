@@ -81,6 +81,7 @@ test('producibility check labels and guidance are translated in every supported 
     'Checks run',
     'Catalog matches',
     'Known conflicts',
+    'The trait pair and Sigil type match a cataloged Sigil Synthesis route.',
   ]
 
   for (const language of ['ja', 'zh-CN', 'zh-TW']) {
