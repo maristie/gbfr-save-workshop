@@ -16,6 +16,7 @@ import {
 } from './save-format.js'
 import { INVENTORY_CATALOG } from './inventory-catalog.js'
 import { MATERIAL_ITEMS_BY_HASH } from './material-catalog.js'
+import { SUMMON_CATALOG } from './summon-catalog.js'
 import {
   allInventoryTermNames,
   characterSearchNames,
@@ -45,6 +46,9 @@ const state = {
   masterPointsDraft: null,
   inventoryAdds: [],
   inventoryRemovals: [],
+  summonAdds: [],
+  summonDraft: {},
+  summonFilter: '',
   itemQuantityDrafts: {},
   itemQuantityInputDrafts: {},
   inventoryFilter: { sigil: '', wrightstone: '', items: '' },
@@ -64,6 +68,8 @@ const wrightstonesById = new Map(INVENTORY_CATALOG.wrightstones.map((item) => [i
 const traitsByHash = new Map(INVENTORY_CATALOG.traits.map((trait) => [Number(trait.hash) >>> 0, trait]))
 const sigilsByHash = new Map(INVENTORY_CATALOG.sigils.map((item) => [Number(item.hash) >>> 0, item]))
 const wrightstonesByHash = new Map(INVENTORY_CATALOG.wrightstones.map((item) => [Number(item.hash) >>> 0, item]))
+const summonsByHash = new Map(SUMMON_CATALOG.summons.map((item) => [Number(item.hash) >>> 0, item]))
+const summonBonusesByHash = new Map(SUMMON_CATALOG.bonuses.map((item) => [Number(item.hash) >>> 0, item]))
 const duplicateSigilNames = new Set(INVENTORY_CATALOG.sigils
   .filter((item, index, items) => items.some((other, otherIndex) => otherIndex !== index && other.name === item.name))
   .map((item) => item.name))
@@ -107,6 +113,16 @@ function materialItemLabel(hash) {
   return item
     ? localizeMaterialItem(item.name, state.language)
     : `${localizeText('Uncatalogued item', state.language)}（${hashToText(hash)}）`
+}
+
+function summonName(hash) {
+  const item = summonsByHash.get(hash >>> 0)
+  return item?.names[state.language] ?? item?.names.en ?? `${localizeText('Unknown summon', state.language)} (${hashToText(hash)})`
+}
+
+function summonBonusName(hash) {
+  const item = summonBonusesByHash.get(hash >>> 0)
+  return item?.names[state.language] ?? item?.names.en ?? `${localizeText('Unknown bonus', state.language)} (${hashToText(hash)})`
 }
 
 function traitOptions(traits, includeEmpty = false, selectedHash = '') {
@@ -176,7 +192,7 @@ function updateItemQuantityBatchControls() {
 function editFeedbackMarkup(changes, queued, pointsChange) {
   if (state.notice) return `<span class="feedback-check">✓</span>${escapeHTML(state.notice)}`
   const itemDrafts = itemQuantityInputCount()
-  return `<span class="feedback-dot"></span><span>${changes.length ? `${changes.length} overmastery slot${changes.length === 1 ? '' : 's'}` : 'No overmastery edits'}</span>${pointsChange !== null ? `<span>· ${escapeHTML(localizeText('Mastery Points', state.language))}: ${escapeHTML(Number(state.parsed.masterPoints.value).toLocaleString())} → ${escapeHTML(Number(pointsChange).toLocaleString())}</span>` : ''}${queued ? `<span>· ${queued} bag change${queued === 1 ? '' : 's'}</span>` : ''}${itemDrafts ? `<span>· ${escapeHTML(itemQuantityInputCountLabel(itemDrafts))}</span>` : ''}`
+  return `<span class="feedback-dot"></span><span>${changes.length ? `${changes.length} overmastery slot${changes.length === 1 ? '' : 's'}` : 'No overmastery edits'}</span>${pointsChange !== null ? `<span>· ${escapeHTML(localizeText('Mastery Points', state.language))}: ${escapeHTML(Number(state.parsed.masterPoints.value).toLocaleString())} → ${escapeHTML(Number(pointsChange).toLocaleString())}</span>` : ''}${queued ? `<span>· ${queued} bag change${queued === 1 ? '' : 's'}</span>` : ''}${state.summonAdds.length ? `<span>· ${state.summonAdds.length} summon addition${state.summonAdds.length === 1 ? '' : 's'}</span>` : ''}${itemDrafts ? `<span>· ${escapeHTML(itemQuantityInputCountLabel(itemDrafts))}</span>` : ''}`
 }
 
 function statOptions(slot) {
@@ -261,11 +277,11 @@ function renderUpload() {
     <div class="welcome-copy">
       <p class="eyebrow"><span class="pulse-dot"></span> SAVE FILE EDITOR <span class="eyebrow-divider">/</span> SAVE WORKSHOP</p>
       <h1>Edit overmasteries. Set Mastery Points.</h1>
-      <p class="welcome-text">Read a Relink save, adjust overmastery stats and Mastery Points, edit existing stackable item quantities, add Sigils and Wrightstones, or choose equipment from the catalog. Then download a verified copy.</p>
+      <p class="welcome-text">Read a Relink save, adjust overmastery stats and Mastery Points, edit existing stackable item quantities, and add Sigils, Wrightstones, or ER summons. Then download a verified copy.</p>
       <div class="trust-points">
         <span><i>01</i> Files stay on this device</span>
         <span><i>02</i> Original save stays untouched</span>
-        <span><i>03</i> Mastery Points, Sigils and Wrightstones</span>
+        <span><i>03</i> Mastery Points, Sigils, Wrightstones, and Summons</span>
       </div>
       <button class="primary-button welcome-button" data-action="open-file" type="button"><span class="button-icon">↑</span> Choose save file</button>
     </div>
@@ -584,6 +600,69 @@ function renderInventoryPanel() {
   </section>`
 }
 
+function renderSummonsPanel() {
+  const bucket = state.parsed.summons
+  const supported = bucket.supported && bucket.unlocked
+  const remaining = Math.max(0, bucket.available - state.summonAdds.length)
+  const searchable = SUMMON_CATALOG.summons.filter((item) => bucket.registrations.has(Number(item.hash)))
+  const needle = state.summonFilter.trim().toLowerCase()
+  const matches = searchable.filter((item) => !needle || `${Object.values(item.names).join(' ')} ${item.hash}`.toLowerCase().includes(needle))
+  const draft = state.summonDraft
+  const selected = matches.find((item) => Number(item.hash) === Number(draft.typeHash)) ?? matches[0] ?? null
+  const main = selected?.mainTraits.find((entry) => Number(entry.hash) === Number(draft.mainTraitHash)) ?? selected?.mainTraits[0] ?? null
+  const bonusRule = selected?.bonuses.find((entry) => Number(entry.hash) === Number(draft.bonusHash)) ?? selected?.bonuses[0] ?? null
+  const bonus = bonusRule ? summonBonusesByHash.get(Number(bonusRule.hash)) : null
+  const mainLevel = main?.levels.includes(Number(draft.mainLevel)) ? Number(draft.mainLevel) : main?.levels.at(-1)
+  const draftBonusLevel = Number(draft.bonusLevel)
+  const bonusLevel = bonusRule && draft.bonusLevel !== '' && Number.isInteger(draftBonusLevel) && bonusRule.levels.includes(draftBonusLevel)
+    ? draftBonusLevel
+    : bonusRule?.levels.at(-1) ?? null
+  const rank = Number.isInteger(Number(draft.rank)) && Number(draft.rank) >= 0 && Number(draft.rank) <= 3 ? Number(draft.rank) : 0
+  const quantity = Math.max(1, Number.parseInt(draft.quantity, 10) || 1)
+  const disabled = !supported || !state.parsed.checksumValid || remaining === 0 || !selected || !main || !bonus
+  const typeOptions = matches.length
+    ? matches.map((item) => `<option value="${item.hash}"${item === selected ? ' selected' : ''}>${escapeHTML(summonName(Number(item.hash)))} · ${item.hash}${item.rolled ? '' : ` · ${localizeText('fixed roll', state.language)}`}</option>`).join('')
+    : '<option value="">No matching summons</option>'
+  const mainOptions = (selected?.mainTraits ?? []).map((entry) => `<option value="${entry.hash}"${entry === main ? ' selected' : ''}>${escapeHTML(traitLabel(Number(entry.hash)))}</option>`).join('')
+  const bonusOptions = (selected?.bonuses ?? []).map((rule) => {
+    const entry = summonBonusesByHash.get(Number(rule.hash))
+    if (!entry) return ''
+    const maximum = ` · ${entry.values.at(-1)}${entry.percent ? '%' : ''} ${localizeText('max', state.language)}`
+    return `<option value="${entry.hash}"${rule === bonusRule ? ' selected' : ''}>${escapeHTML(summonBonusName(Number(entry.hash)))}${maximum}</option>`
+  }).join('')
+  const mainLevels = (main?.levels ?? []).map((level) => `<option value="${level}"${level === mainLevel ? ' selected' : ''}>Lv ${level}</option>`).join('')
+  const bonusLevels = (bonus ? bonusRule?.levels ?? [] : []).map((level) => {
+    const value = bonus.values[level]
+    return `<option value="${level}"${level === bonusLevel ? ' selected' : ''}>Lv ${level} · ${value}${bonus.percent ? '%' : ''}</option>`
+  }).join('')
+  const owned = bucket.supported ? bucket.rows.filter((row) => !row.empty).sort((a, b) => b.slotId - a.slotId).slice(0, 12) : []
+  const ownedMarkup = owned.length ? owned.map((row) => `<article class="inventory-row"><div class="inventory-item-copy"><strong>${escapeHTML(summonName(row.typeHash))}</strong><small>${localizeText('Slot', state.language)} ${row.slotId} · ${localizeText('Rank', state.language)} ${row.rank}</small><span>${escapeHTML(traitLabel(row.mainTraitHash))} Lv ${row.mainLevel} · ${escapeHTML(summonBonusName(row.bonusHash))} Lv ${row.bonusLevel}</span></div></article>`).join('') : '<p class="inventory-empty">No summon stones in this save yet.</p>'
+  const queuedMarkup = state.summonAdds.length ? state.summonAdds.map((item) => `<div class="queue-item"><span><strong>${escapeHTML(summonName(item.typeHash))}</strong></span><small>${escapeHTML(traitLabel(item.mainTraitHash))} Lv ${item.mainLevel} · ${escapeHTML(summonBonusName(item.bonusHash))} Lv ${item.bonusLevel} · ${localizeText('Rank', state.language)} ${item.rank}</small><button class="queue-remove" data-action="remove-summon" data-draft-id="${item.draftId}" type="button" aria-label="Remove queued summon">×</button></div>`).join('') : '<p class="queue-empty">No summon additions queued.</p>'
+  const unavailable = bucket.supported
+    ? bucket.unlocked ? '' : '<div class="alert alert-warning"><strong>Summons are not unlocked in this save.</strong> Obtain your first summon in Endless Ragnarok, then reopen the save.</div>'
+    : `<div class="alert alert-warning"><strong>Summon creation is unavailable for this save.</strong> ${escapeHTML(bucket.reason)}</div>`
+  return `<section class="inventory-workspace summons-workspace">
+    <div class="inventory-intro"><div><p class="eyebrow">ENDLESS RAGNAROK</p><h2>Add summon stones.</h2></div><p>Choose a summon, then select both traits and levels from that stone’s cataloged natural roll pools. New stones use empty save slots. Export verifies the new record and checksum.</p></div>
+    ${unavailable}
+    <div class="inventory-grid">
+      <section class="inventory-card summon-create-card">
+        <div class="inventory-card-heading"><div><p class="eyebrow">SUMMON CATALOG</p><h3>Create a summon</h3></div><span class="inventory-capacity">${bucket.occupied} ${localizeText('owned', state.language)} · ${remaining} ${localizeText('empty', state.language)}</span></div>
+        <p class="inventory-help">Both traits and their levels follow this summon’s cataloged natural rolls. Upgrade rank is separate from summon rarity.</p>
+        <label class="search-box inventory-search"><span>⌕</span><input id="summon-search" type="search" placeholder="Search summon names or hashes" value="${escapeHTML(state.summonFilter)}" autocomplete="off" /></label>
+        <form id="summon-add-form" class="raw-add-form">
+          <div class="raw-lane"><label class="raw-field"><span>SUMMON TYPE *</span><select name="typeHash" ${disabled ? 'disabled' : ''} required>${typeOptions}</select></label><label class="raw-field"><span>QUANTITY *</span><input name="quantity" type="number" min="1" max="${Math.max(1, remaining)}" value="${quantity}" ${disabled ? 'disabled' : ''} required /></label></div>
+          <div class="raw-lane"><label class="raw-field"><span>MAIN TRAIT *</span><select name="mainTraitHash" ${disabled ? 'disabled' : ''} required>${mainOptions}</select></label><label class="raw-field"><span>MAIN LEVEL *</span><select name="mainLevel" ${disabled ? 'disabled' : ''} required>${mainLevels}</select></label></div>
+          <div class="raw-lane"><label class="raw-field"><span>EQUIP BONUS *</span><select name="bonusHash" ${disabled ? 'disabled' : ''} required>${bonusOptions}</select></label><label class="raw-field"><span>BONUS LEVEL *</span><select name="bonusLevel" ${disabled ? 'disabled' : ''} required>${bonusLevels}</select></label></div>
+          <label class="raw-field summon-rank-field"><span>UPGRADE RANK</span><select name="rank" ${disabled ? 'disabled' : ''}>${[0, 1, 2, 3].map((value) => `<option value="${value}"${rank === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label>
+          <button class="primary-button raw-submit" type="submit" ${disabled ? 'disabled' : ''}>Add summon</button>
+        </form>
+      </section>
+      <section class="inventory-card summon-owned-card"><div class="inventory-card-heading"><div><p class="eyebrow">OWNED SUMMONS</p><h3>Recent stones</h3></div></div><div class="inventory-list">${ownedMarkup}</div></section>
+    </div>
+    <section class="queue-panel"><div><p class="eyebrow">PENDING ADDITIONS</p><h3>${state.summonAdds.length} ${localizeText('queued', state.language)}</h3></div><div class="queue-list">${queuedMarkup}</div></section>
+  </section>`
+}
+
 function renderMasterPointsPanel() {
   const field = state.parsed.masterPoints
   const checksumValid = state.parsed.checksumValid
@@ -616,7 +695,7 @@ function renderLoaded() {
   const queued = inventoryChangeCount()
   const pointsChange = masterPointsChange()
   const unappliedItemQuantityCount = itemQuantityInputCount()
-  const hasPending = changes.length > 0 || queued > 0 || pointsChange !== null || unappliedItemQuantityCount > 0
+  const hasPending = changes.length > 0 || queued > 0 || state.summonAdds.length > 0 || pointsChange !== null || unappliedItemQuantityCount > 0
   const canDownload = hasPending && checksumValid && unappliedItemQuantityCount === 0
   const slotsMarkup = character ? character.slots.map((slot) => {
     const value = slotValue(slot)
@@ -668,9 +747,10 @@ function renderLoaded() {
     <div class="tool-tabs" role="tablist" aria-label="Save editor tools">
       <button class="tool-tab${state.activeTab === 'overmastery' ? ' is-active' : ''}" role="tab" aria-selected="${state.activeTab === 'overmastery'}" data-action="switch-tab" data-tab="overmastery" type="button">Overmastery</button>
       <button class="tool-tab${state.activeTab === 'inventory' ? ' is-active' : ''}" role="tab" aria-selected="${state.activeTab === 'inventory'}" data-action="switch-tab" data-tab="inventory" type="button">Bag items <span>${queued}</span></button>
+      <button class="tool-tab${state.activeTab === 'summons' ? ' is-active' : ''}" role="tab" aria-selected="${state.activeTab === 'summons'}" data-action="switch-tab" data-tab="summons" type="button">Summons${state.summonAdds.length ? `<span>${state.summonAdds.length}</span>` : ''}</button>
       <button class="tool-tab${state.activeTab === 'master-points' ? ' is-active' : ''}" role="tab" aria-selected="${state.activeTab === 'master-points'}" data-action="switch-tab" data-tab="master-points" type="button">Mastery Points${pointsChange !== null ? '<span>1</span>' : ''}</button>
     </div>
-    ${state.activeTab === 'inventory' ? renderInventoryPanel() : state.activeTab === 'master-points' ? renderMasterPointsPanel() : `<div class="editor-layout">
+    ${state.activeTab === 'inventory' ? renderInventoryPanel() : state.activeTab === 'summons' ? renderSummonsPanel() : state.activeTab === 'master-points' ? renderMasterPointsPanel() : `<div class="editor-layout">
       <aside class="character-panel">
         <div class="panel-heading"><div><p class="eyebrow">CHARACTER ROSTER</p><h2>Characters</h2></div><span class="count-badge">${count}</span></div>
         <label class="search-box"><span>⌕</span><input id="character-search" type="search" placeholder="Find a character" value="${escapeHTML(state.filter)}" autocomplete="off" /></label>
@@ -747,6 +827,17 @@ function bindEvents() {
     render()
   })
   app.querySelector('#master-points-form')?.addEventListener('submit', applyMasterPoints)
+  const summonForm = app.querySelector('#summon-add-form')
+  summonForm?.addEventListener('submit', (event) => queueSummonAddition(event, summonForm))
+  summonForm?.addEventListener('input', () => rememberSummonForm(summonForm))
+  summonForm?.addEventListener('change', (event) => {
+    rememberSummonForm(summonForm)
+    const name = event.target.name
+    if (name === 'typeHash') Object.assign(state.summonDraft, { mainTraitHash: '', mainLevel: '' })
+    if (name === 'mainTraitHash') state.summonDraft.mainLevel = ''
+    if (name === 'bonusHash') state.summonDraft.bonusLevel = ''
+    if (['typeHash', 'mainTraitHash', 'bonusHash'].includes(name)) render()
+  })
   input?.addEventListener('change', async () => {
     const file = input.files?.[0]
     if (file) await loadFile(file)
@@ -771,6 +862,14 @@ function bindEvents() {
   app.querySelector('#character-search')?.addEventListener('input', (event) => {
     state.filter = event.target.value
     applyFilter()
+  })
+  app.querySelector('#summon-search')?.addEventListener('input', (event) => {
+    state.summonFilter = event.currentTarget.value
+    const caret = event.currentTarget.selectionStart
+    render()
+    const replacement = app.querySelector('#summon-search')
+    replacement?.focus({ preventScroll: true })
+    replacement?.setSelectionRange(caret, caret)
   })
 
   app.querySelectorAll('[data-role="inventory-search"]').forEach((inputElement) => {
@@ -857,6 +956,7 @@ function bindEvents() {
       if (action === 'queue-removal') queueInventoryRemoval(event.currentTarget.dataset.kind, Number(event.currentTarget.dataset.unitId))
       if (action === 'restore-removal') restoreInventoryRemoval(event.currentTarget.dataset.kind, Number(event.currentTarget.dataset.unitId))
       if (action === 'remove-queued') removeQueuedAddition(Number(event.currentTarget.dataset.draftId))
+      if (action === 'remove-summon') removeQueuedSummon(Number(event.currentTarget.dataset.draftId))
       if (action === 'clear-item-quantity') {
         const unitId = Number(event.currentTarget.dataset.unitId)
         state.itemQuantityDrafts = Object.fromEntries(Object.entries(state.itemQuantityDrafts).filter(([key]) => Number(key) !== unitId))
@@ -1035,6 +1135,56 @@ function removeQueuedAddition(draftId) {
   render()
 }
 
+function rememberSummonForm(form) {
+  const data = new FormData(form)
+  state.summonDraft = Object.fromEntries(['typeHash', 'mainTraitHash', 'mainLevel', 'bonusHash', 'bonusLevel', 'rank', 'quantity'].map((key) => [key, String(data.get(key) ?? '')]))
+}
+
+function queueSummonAddition(event, form) {
+  event.preventDefault()
+  rememberSummonForm(form)
+  try {
+    const inventory = state.parsed?.summons
+    if (!state.parsed?.checksumValid) throw new Error('The input save checksum is invalid; editing is disabled for safety.')
+    if (!inventory?.supported) throw new Error(inventory?.reason || 'This save has no usable summon inventory.')
+    if (!inventory.unlocked) throw new Error('The summon system is not unlocked in this save.')
+    const data = new FormData(form)
+    const quantity = Number(data.get('quantity'))
+    const remaining = inventory.available - state.summonAdds.length
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > remaining) throw new Error(`Only ${Math.max(0, remaining)} empty summon slots remain.`)
+    const addition = {
+      typeHash: Number(data.get('typeHash')),
+      mainTraitHash: Number(data.get('mainTraitHash')),
+      mainLevel: Number(data.get('mainLevel')),
+      bonusHash: Number(data.get('bonusHash')),
+      bonusLevel: Number(data.get('bonusLevel')),
+      rank: Number(data.get('rank')),
+    }
+    const definition = summonsByHash.get(addition.typeHash)
+    const main = definition?.mainTraits.find((entry) => Number(entry.hash) === addition.mainTraitHash)
+    const bonus = definition?.bonuses.find((entry) => Number(entry.hash) === addition.bonusHash)
+    if (!definition || !main?.levels.includes(addition.mainLevel) || !bonus?.levels.includes(addition.bonusLevel) || !summonBonusesByHash.has(addition.bonusHash) || !Number.isInteger(addition.rank) || addition.rank < 0 || addition.rank > 3) {
+      throw new Error('Choose a summon and trait levels from its cataloged natural roll pools.')
+    }
+    if (!inventory.registrations.has(addition.typeHash)) throw new Error('This summon type is not registered in the save catalog.')
+    for (let index = 0; index < quantity; index += 1) state.summonAdds.push({ ...addition, draftId: state.nextDraftId++ })
+    state.error = ''
+    state.notice = ''
+  } catch (error) {
+    state.error = error instanceof Error ? error.message : String(error)
+    state.notice = ''
+  }
+  state.activeTab = 'summons'
+  render()
+}
+
+function removeQueuedSummon(draftId) {
+  state.summonAdds = state.summonAdds.filter((addition) => addition.draftId !== draftId)
+  state.error = ''
+  state.notice = ''
+  render()
+}
+
 function applyItemQuantity(event, form) {
   event.preventDefault()
   const unitId = Number(form.dataset.unitId)
@@ -1098,6 +1248,7 @@ function resetEdits() {
   }
   state.inventoryAdds = []
   state.inventoryRemovals = []
+  state.summonAdds = []
   state.itemQuantityDrafts = {}
   state.itemQuantityInputDrafts = {}
   state.masterPointsDraft = null
@@ -1123,6 +1274,9 @@ async function loadFile(file) {
     state.activeTab = 'overmastery'
     state.inventoryAdds = []
     state.inventoryRemovals = []
+    state.summonAdds = []
+    state.summonDraft = {}
+    state.summonFilter = ''
     state.catalogDrafts = { sigil: null, wrightstone: null }
     state.inventoryFilter = { sigil: '', wrightstone: '', items: '' }
     state.itemListLimit = ITEM_LIST_PAGE_SIZE
@@ -1139,6 +1293,9 @@ async function loadFile(file) {
     state.selectedUnitId = null
     state.inventoryAdds = []
     state.inventoryRemovals = []
+    state.summonAdds = []
+    state.summonDraft = {}
+    state.summonFilter = ''
   }
   render()
 }
@@ -1171,7 +1328,7 @@ function downloadEditedSave() {
     const changes = currentChanges()
     const pointsChange = masterPointsChange()
     const quantityChanges = itemQuantityChanges()
-    const output = createEditedSave(state.bytes, state.parsed, changes, state.inventoryAdds, state.inventoryRemovals, pointsChange, quantityChanges)
+    const output = createEditedSave(state.bytes, state.parsed, changes, state.inventoryAdds, state.inventoryRemovals, pointsChange, quantityChanges, state.summonAdds)
     const blob = new Blob([output], { type: 'application/octet-stream' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -1187,7 +1344,8 @@ function downloadEditedSave() {
     const itemQuantityCount = quantityChanges.length
     const overmasteryCount = changes.length
     const masterPointsCount = pointsChange === null ? 0 : 1
-    state.notice = `Downloaded ${link.download}; checksum, ${overmasteryCount} overmastery edits, ${additionCount} bag additions, ${removalCount} bag removals, ${itemQuantityCount} item quantity edits, and ${masterPointsCount} Mastery Points edits verified.`
+    const summonCount = state.summonAdds.length
+    state.notice = `Downloaded ${link.download}; checksum, ${overmasteryCount} overmastery edits, ${additionCount} bag additions, ${removalCount} bag removals, ${itemQuantityCount} item quantity edits, ${summonCount} summon additions, and ${masterPointsCount} Mastery Points edits verified.`
   } catch (error) {
     state.error = error instanceof Error ? error.message : String(error)
     state.notice = ''

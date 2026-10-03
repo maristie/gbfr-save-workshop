@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "license": "MIT",
   "type": "module",
-  "description": "A local-first browser editor for Granblue Fantasy: Relink saves, overmasteries, Mastery Points, bag item quantities, Sigils, and Wrightstones",
+  "description": "A local-first browser editor for Granblue Fantasy: Relink saves, overmasteries, Mastery Points, bag items, Sigils, Wrightstones, and ER summons",
   "homepage": "https://maristie.com/gbfr-save-workshop/",
   "repository": {
     "type": "git",

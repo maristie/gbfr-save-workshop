@@ -233,6 +233,9 @@ code { font: .68rem var(--mono); color:#adc6c7; }
 .raw-field select:disabled, .raw-field input:disabled { color:#71808a; opacity:.6; cursor:not-allowed; }
 .raw-field input::placeholder { color:#596d78; }
 .raw-submit { min-height:34px; align-self:flex-start; padding:0 12px; font-size:.63rem; }
+.summons-workspace .inventory-grid { grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr); }
+.summon-owned-card .inventory-list { max-height:410px; margin-top:12px; }
+.summon-rank-field { max-width:120px; }
 .queue-panel { display:grid; grid-template-columns:170px minmax(0,1fr); gap:15px; margin-top:14px; }
 .queue-panel .eyebrow { font-size:.52rem; }
 .queue-panel h3 { font-size:.91rem; }
@@ -312,8 +315,8 @@ code { font: .68rem var(--mono); color:#adc6c7; }
   .edit-footer { align-items:stretch; flex-direction:column; gap:11px; }
   .edit-actions { justify-content:flex-end; }
   .download-button { flex:1; }
-  .tool-tabs { margin-top:13px; padding-left:0; }
-  .tool-tab { min-height:36px; flex:1; justify-content:center; padding:0 7px; font-size:.65rem; }
+  .tool-tabs { margin-top:13px; padding-left:0; overflow-x:auto; }
+  .tool-tab { min-height:36px; flex:0 0 auto; justify-content:center; padding:0 10px; font-size:.65rem; white-space:nowrap; }
   .inventory-workspace { padding-top:15px; }
   .inventory-intro h2 { font-size:1.35rem; }
   .inventory-intro > p { font-size:.63rem; }
@@ -336,6 +339,7 @@ code { font: .68rem var(--mono); color:#adc6c7; }
   .queue-item { grid-template-columns:minmax(0,1fr) auto 24px; gap:6px; font-size:.56rem; }
   .queue-item small { font-size:.46rem; }
   .raw-lane { grid-template-columns:minmax(0,1fr) 82px; }
+  .summons-workspace .inventory-grid { grid-template-columns:1fr; }
   .workspace-note { align-items:flex-start; font-size:.6rem; line-height:1.5; }
   .page-footer { flex-direction:column; gap:6px; font-size:.46rem; }
 }

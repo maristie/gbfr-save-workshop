@@ -1,3 +1,5 @@
+import { SUMMON_CATALOG } from './summon-catalog.js'
+
 const EMPTY_HASH = 0x887ae0b0
 const HASH_SEED_ID_TYPE = 1003
 const CHARACTER_ID_TYPE = 1301
@@ -11,6 +13,9 @@ const ITEM_QUANTITY_ID_TYPE = 1802
 const ITEM_STATE_ID_TYPES = [1803, 1804]
 const ITEM_EXTRA_STATE_ID_TYPE = 1807
 export const MAX_ITEM_QUANTITY = 0x7fffffff
+const SUMMON_CAPACITY = 1000
+const SUMMON_TYPES = { catalog: 1452, registered: 1453, maxSlot: 1454, unlocked: 1455, slot: 1456, type: 1457, traits: 1458, levels: 1459, rank: 1460 }
+const summonCatalogByHash = new Map(SUMMON_CATALOG.summons.map((summon) => [Number(summon.hash) >>> 0, summon]))
 const FIRST_CHARACTER_UNIT_ID = 10000
 const LAST_CHARACTER_UNIT_ID = 20000
 const SLOT_BASE = 10000000
@@ -173,6 +178,7 @@ function parseUnitTable(view, base, length, rootPosition, rootFieldIndex, signed
       valueCount,
       firstValue: valueCount > 0 ? readValue(valueDataPosition) : null,
       firstValueOffset: valueCount > 0 ? base + valueDataPosition : null,
+      secondValue: valueCount > 1 ? readValue(valueDataPosition + valueSize) : null,
     })
   }
   return units
@@ -355,6 +361,80 @@ function parseInventory(uintUnits, intUnits, boolUnits) {
   }
 }
 
+export function parseSummons(uintUnits, intUnits = []) {
+  const indexes = new Map()
+  for (const table of [uintUnits, intUnits]) {
+    for (const unit of table) {
+      if (unit.idType < SUMMON_TYPES.catalog || unit.idType > SUMMON_TYPES.rank) continue
+      if (!indexes.has(unit.idType)) indexes.set(unit.idType, new Map())
+      const units = indexes.get(unit.idType)
+      if (!units.has(unit.unitId)) units.set(unit.unitId, [])
+      units.get(unit.unitId).push(unit)
+    }
+  }
+  const unavailable = (reason) => ({ supported: false, reason, rows: [], registrations: new Map(), occupied: 0, available: 0, unlocked: false, maxSlotId: null })
+  if (!indexes.size) return unavailable('This save has no Endless Ragnarok summon records.')
+  const record = (idType, unitId, count) => {
+    const matches = indexes.get(idType)?.get(unitId) ?? []
+    return matches.length === 1 && matches[0].valueCount === count && matches[0].firstValueOffset !== null ? matches[0] : null
+  }
+  const counter = record(SUMMON_TYPES.maxSlot, 0, 1)
+  const unlocked = record(SUMMON_TYPES.unlocked, 0, 1)
+  if (!counter || !unlocked || (unlocked.firstValue !== 0 && unlocked.firstValue !== 1)) {
+    return unavailable('The summon counter or unlock flag is missing or ambiguous.')
+  }
+  const registrations = new Map()
+  for (const [unitId] of indexes.get(SUMMON_TYPES.catalog) ?? []) {
+    const catalog = record(SUMMON_TYPES.catalog, unitId, 1)
+    const flag = record(SUMMON_TYPES.registered, unitId, 1)
+    if (!catalog || !flag || (flag.firstValue !== 0 && flag.firstValue !== 1)) {
+      return unavailable('The summon type registration table is incomplete or ambiguous.')
+    }
+    const typeHash = catalog.firstValue >>> 0
+    if (!registrations.has(typeHash)) registrations.set(typeHash, [])
+    registrations.get(typeHash).push({ value: flag.firstValue, offset: flag.firstValueOffset })
+  }
+  if (!registrations.size) return unavailable('The summon type registration table is missing.')
+
+  const rows = []
+  const seenSlotIds = new Set()
+  let highestSlotId = 0
+  for (let unitId = 0; unitId < SUMMON_CAPACITY; unitId += 1) {
+    const slot = record(SUMMON_TYPES.slot, unitId, 1)
+    const type = record(SUMMON_TYPES.type, unitId, 1)
+    const traits = record(SUMMON_TYPES.traits, unitId, 2)
+    const levels = record(SUMMON_TYPES.levels, unitId, 2)
+    const rank = record(SUMMON_TYPES.rank, unitId, 1)
+    if (!slot || !type || !traits || !levels || !rank) {
+      return unavailable('The summon slot records are missing or ambiguous.')
+    }
+    const row = {
+      unitId,
+      slotId: slot.firstValue >>> 0,
+      typeHash: type.firstValue >>> 0,
+      mainTraitHash: traits.firstValue >>> 0,
+      bonusHash: traits.secondValue >>> 0,
+      mainLevel: levels.firstValue >>> 0,
+      bonusLevel: levels.secondValue >>> 0,
+      rank: rank.firstValue >>> 0,
+      offsets: { slot: slot.firstValueOffset, type: type.firstValueOffset, mainTrait: traits.firstValueOffset, bonus: traits.firstValueOffset + 4, mainLevel: levels.firstValueOffset, bonusLevel: levels.firstValueOffset + 4, rank: rank.firstValueOffset },
+    }
+    row.empty = row.slotId === 0 && row.typeHash === EMPTY_HASH && row.mainTraitHash === EMPTY_HASH && row.bonusHash === EMPTY_HASH && row.mainLevel === 0xffffffff && row.bonusLevel === 0xffffffff && row.rank === 0
+    if (!row.empty && (row.slotId === 0 || row.typeHash === EMPTY_HASH || seenSlotIds.has(row.slotId))) {
+      return unavailable('The summon inventory contains an incomplete or duplicate slot.')
+    }
+    if (!row.empty) {
+      seenSlotIds.add(row.slotId)
+      highestSlotId = Math.max(highestSlotId, row.slotId)
+    }
+    rows.push(row)
+  }
+  const maxSlotId = counter.firstValue >>> 0
+  if (maxSlotId < highestSlotId) return unavailable('The summon slot counter is lower than an occupied slot ID.')
+  const occupied = seenSlotIds.size
+  return { supported: true, reason: '', rows, registrations, occupied, available: SUMMON_CAPACITY - occupied, unlocked: unlocked.firstValue === 1, maxSlotId, counterOffset: counter.firstValueOffset }
+}
+
 function decodeLevel(levelBit) {
   if (levelBit <= 0 || levelBit > 0x200 || (levelBit & (levelBit - 1)) !== 0) return null
   return 32 - Math.clz32(levelBit)
@@ -496,6 +576,7 @@ export function parseSave(bytes) {
     HASH_SEED,
   )
   const inventory = parseInventory(uintUnits, intUnits, boolUnits)
+  const summons = parseSummons(uintUnits, intUnits)
 
   return {
     slotOffset,
@@ -509,6 +590,7 @@ export function parseSave(bytes) {
     checksumValid,
     masterPoints,
     inventory,
+    summons,
     characters,
   }
 }
@@ -772,6 +854,57 @@ function planItemQuantityChanges(parsed, changes) {
   return { patches, expected }
 }
 
+export function planSummonAdditions(parsed, additions) {
+  if (!Array.isArray(additions)) fail('Summon additions are malformed.')
+  if (!additions.length) return { patches: [], expected: [], maxSlotId: null }
+  const inventory = parsed.summons
+  if (!inventory?.supported) fail(inventory?.reason || 'This save has no usable summon inventory.')
+  if (!inventory.unlocked) fail('The summon system is not unlocked in this save.')
+  if (additions.length > inventory.available) fail(`Only ${inventory.available} empty summon slots remain.`)
+  if (inventory.maxSlotId + additions.length > 0xffffffff) fail('Summon slot IDs exceed the supported uint32 range.')
+  const targets = inventory.rows.filter((row) => row.empty).slice(0, additions.length)
+  const patches = []
+  const expected = []
+  const registrationOffsets = new Set()
+  for (let index = 0; index < additions.length; index += 1) {
+    const source = additions[index]
+    const hashValue = (value, label) => {
+      if (!Number.isInteger(value) || value <= 0 || value > 0xffffffff || value === EMPTY_HASH) fail(`${label} is invalid.`)
+      return value >>> 0
+    }
+    const typeHash = hashValue(source?.typeHash, 'Summon type hash')
+    const mainTraitHash = hashValue(source?.mainTraitHash, 'Summon main trait hash')
+    const bonusHash = hashValue(source?.bonusHash, 'Summon bonus hash')
+    const mainLevel = source?.mainLevel
+    const bonusLevel = source?.bonusLevel
+    const rank = source?.rank
+    if (!Number.isInteger(rank) || rank < 0 || rank > 3) fail('Summon upgrade rank must be from 0 to 3.')
+    const definition = summonCatalogByHash.get(typeHash)
+    if (!definition) fail('The summon type is not in the verified catalog.')
+    const main = definition.mainTraits.find((entry) => Number(entry.hash) === mainTraitHash)
+    const bonus = definition.bonuses.find((entry) => Number(entry.hash) === bonusHash)
+    if (!main || !main.levels.includes(mainLevel) || !bonus || !bonus.levels.includes(bonusLevel)) {
+      fail('The selected trait or level is outside this summon’s natural roll pools.')
+    }
+    const registrations = inventory.registrations.get(typeHash)
+    if (!registrations?.length) fail('This summon type is not registered in the save catalog.')
+    const target = targets[index]
+    const slotId = inventory.maxSlotId + index + 1
+    for (const [field, value] of Object.entries({ slot: slotId, type: typeHash, mainTrait: mainTraitHash, bonus: bonusHash, mainLevel, bonusLevel, rank })) {
+      patches.push({ offset: target.offsets[field], value, type: 'uint32' })
+    }
+    for (const flag of registrations) {
+      if (registrationOffsets.has(flag.offset)) continue
+      registrationOffsets.add(flag.offset)
+      patches.push({ offset: flag.offset, value: 1, type: 'uint32' })
+    }
+    expected.push({ unitId: target.unitId, slotId, typeHash, mainTraitHash, bonusHash, mainLevel, bonusLevel, rank })
+  }
+  const maxSlotId = inventory.maxSlotId + additions.length
+  patches.push({ offset: inventory.counterOffset, value: maxSlotId, type: 'uint32' })
+  return { patches, expected, maxSlotId }
+}
+
 function verifyInventoryPlan(inventory, expected, cleared) {
   for (const item of expected) {
     const rows = inventory[item.kind === 'sigil' ? 'sigils' : 'wrightstones'].rows
@@ -814,10 +947,24 @@ function verifyItemQuantityPlan(items, expected) {
   }
 }
 
-export function createEditedSave(bytes, parsed, changes, inventoryAdds = [], inventoryRemovals = [], masterPointsValue = null, itemQuantityChanges = []) {
+function verifySummonPlan(summons, plan) {
+  if (!plan.expected.length) return
+  if (!summons.supported || summons.maxSlotId !== plan.maxSlotId) fail('Read-back verification failed for the summon slot counter.')
+  for (const expected of plan.expected) {
+    const row = summons.rows[expected.unitId]
+    if (!row || row.empty || Object.entries(expected).some(([field, value]) => row[field] !== value)) {
+      fail(`Read-back verification failed for summon slot ${expected.unitId}.`)
+    }
+    if (!summons.registrations.get(expected.typeHash)?.every((flag) => flag.value === 1)) {
+      fail(`Read-back verification failed for summon registration ${hash32(expected.typeHash)}.`)
+    }
+  }
+}
+
+export function createEditedSave(bytes, parsed, changes, inventoryAdds = [], inventoryRemovals = [], masterPointsValue = null, itemQuantityChanges = [], summonAdds = []) {
   if (!parsed.checksumValid) fail('The input save checksum is invalid; editing is disabled for safety.')
   const itemQuantityPlan = planItemQuantityChanges(parsed, itemQuantityChanges)
-  if (!changes.length && !inventoryAdds.length && !inventoryRemovals.length && masterPointsValue === null && !itemQuantityPlan.expected.length) fail('There are no changes to download.')
+  if (!changes.length && !inventoryAdds.length && !inventoryRemovals.length && masterPointsValue === null && !itemQuantityPlan.expected.length && !summonAdds.length) fail('There are no changes to download.')
   if (masterPointsValue !== null) {
     if (!parsed.masterPoints?.editable || parsed.masterPoints.offset === null) fail('The Mastery Points field is missing or ambiguous in this save.')
     if (!Number.isInteger(masterPointsValue) || masterPointsValue < 0 || masterPointsValue > MAX_MASTER_POINTS) {
@@ -825,6 +972,7 @@ export function createEditedSave(bytes, parsed, changes, inventoryAdds = [], inv
     }
   }
   const inventoryPlan = planInventoryChanges(parsed, inventoryAdds, inventoryRemovals)
+  const summonPlan = planSummonAdditions(parsed, summonAdds)
   const output = new Uint8Array(bytes)
   const view = new DataView(output.buffer, output.byteOffset, output.byteLength)
 
@@ -841,6 +989,7 @@ export function createEditedSave(bytes, parsed, changes, inventoryAdds = [], inv
     else view.setUint32(patch.offset, patch.value, true)
   }
   for (const patch of itemQuantityPlan.patches) view.setInt32(patch.offset, patch.value, true)
+  for (const patch of summonPlan.patches) view.setUint32(patch.offset, patch.value, true)
 
   const checksum = xxhash64(view, parsed.checksumStart, parsed.checksumEnd, HASH_SEED)
   view.setBigUint64(parsed.checksumOffset, checksum, true)
@@ -861,6 +1010,7 @@ export function createEditedSave(bytes, parsed, changes, inventoryAdds = [], inv
   }
   verifyInventoryPlan(reparsed.inventory, inventoryPlan.expected, inventoryPlan.cleared)
   verifyItemQuantityPlan(reparsed.inventory.items, itemQuantityPlan.expected)
+  verifySummonPlan(reparsed.summons, summonPlan)
   return output
 }
 
