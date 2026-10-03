@@ -99,7 +99,9 @@ function itemLabel(kind, hash) {
   if (!item) return `${localizeText(`Uncatalogued ${kind === 'sigil' ? 'Sigil' : 'Wrightstone'}`, state.language)}（${hashToText(hash)}）`
   const name = localizeInventoryTerm(item.name, kind, state.language)
   if (kind === 'sigil' && duplicateSigilNames.has(item.name)) {
-    const secondary = localizeText(item.fixedSecondary ? 'fixed secondary' : 'selectable secondary', state.language)
+    const secondary = item.fixedSecondary
+      ? traitLabel(Number(item.secondaryTraitHashes[0]))
+      : localizeText('selectable secondary', state.language)
     return `${name} · ${secondary}`
   }
   return name
@@ -146,10 +148,15 @@ function primaryTraitFor(item) {
 function sigilSearchText(item) {
   const itemNames = allInventoryTermNames(item.name, 'sigil')
   const traitNames = allInventoryTermNames(item.primaryTraitName, 'trait')
+  const secondaryTraitNames = (item.secondaryTraitHashes ?? [])
+    .flatMap((hash) => {
+      const trait = traitForHash(Number(hash))
+      return trait ? allInventoryTermNames(trait.name, 'trait') : []
+    })
   const secondaryKind = item.fixedSecondary
     ? 'fixed secondary'
     : (item.secondaryTraitHashes?.length ? 'selectable secondary' : '')
-  return [...itemNames, ...traitNames, item.id, item.hash, secondaryKind].join(' ').toLocaleLowerCase()
+  return [...itemNames, ...traitNames, ...secondaryTraitNames, item.id, item.hash, secondaryKind].join(' ').toLocaleLowerCase()
 }
 
 function sigilCatalogResults(search) {

@@ -2900,6 +2900,1111 @@ export const INVENTORY_TERMS = {
       "ja": "白竜の誓い＋",
       "zh-CN": "白龙的誓约＋",
       "zh-TW": "白龍的誓約＋"
+    },
+    "Celestial Lumen III": {
+      "ja": "天星の煌 III",
+      "zh-CN": "天星之煌Ⅲ",
+      "zh-TW": "天星之煌 III"
+    },
+    "Celestial Lumen V+": {
+      "ja": "天星の煌 V＋",
+      "zh-CN": "天星之煌Ⅴ＋",
+      "zh-TW": "天星之煌 V＋"
+    },
+    "Celestial Terra IV+": {
+      "ja": "天星の界 IV＋",
+      "zh-CN": "天星之界Ⅳ＋",
+      "zh-TW": "天星之界 IV＋"
+    },
+    "Immortal Shell": {
+      "ja": "恐るべき漆黒のカニジーン",
+      "zh-CN": "可怕的漆黑钳蟹因子",
+      "zh-TW": "令人畏懼的漆黑蟹因子"
+    },
+    "Celestial Nyx IV+": {
+      "ja": "天星の煉 IV＋",
+      "zh-CN": "天星之炼Ⅳ＋",
+      "zh-TW": "天星之煉 IV＋"
+    },
+    "Path to Mastery V+": {
+      "ja": "取得MSP V＋",
+      "zh-CN": "获得MSPⅤ＋",
+      "zh-TW": "取得MSP V＋"
+    },
+    "In a Pinch+": {
+      "ja": "漆黒の絆＋",
+      "zh-CN": "漆黑之谊＋",
+      "zh-TW": "漆黑羈絆＋"
+    },
+    "Thunderwolf's Acuity": {
+      "ja": "雷狼の慧眼",
+      "zh-CN": "雷狼的慧眼",
+      "zh-TW": "雷狼的慧眼"
+    },
+    "Divergence II": {
+      "ja": "ダイバージェンス II",
+      "zh-CN": "分歧Ⅱ",
+      "zh-TW": "命運分歧 II"
+    },
+    "Celestial Terra V+": {
+      "ja": "天星の界 V＋",
+      "zh-CN": "天星之界Ⅴ＋",
+      "zh-TW": "天星之界 V＋"
+    },
+    "Thunderwolf's Recharge": {
+      "ja": "雷狼の装弾",
+      "zh-CN": "雷狼的弹匣",
+      "zh-TW": "雷狼的槍彈"
+    },
+    "Uplift V+": {
+      "ja": "高揚 V＋",
+      "zh-CN": "激昂Ⅴ＋",
+      "zh-TW": "高揚 V＋"
+    },
+    "Fatebreaker V+": {
+      "ja": "天上無頼 V＋",
+      "zh-CN": "浪迹天涯Ⅴ＋",
+      "zh-TW": "天上無敵 V＋"
+    },
+    "The Black's Mark+": {
+      "ja": "黒の呪印＋",
+      "zh-CN": "黑龙的咒印＋",
+      "zh-TW": "黑之咒印＋"
+    },
+    "Fearless Heart+": {
+      "ja": "ブレイブハート＋",
+      "zh-CN": "英勇之心＋",
+      "zh-TW": "英勇之心＋"
+    },
+    "The Black's Impulse+": {
+      "ja": "黒の一躍＋",
+      "zh-CN": "黑龙的折跃＋",
+      "zh-TW": "黑之飛躍＋"
+    },
+    "Celestial Terra III+": {
+      "ja": "天星の界 III＋",
+      "zh-CN": "天星之界Ⅲ＋",
+      "zh-TW": "天星之界 III＋"
+    },
+    "Provoke V+": {
+      "ja": "挑発 V＋",
+      "zh-CN": "挑衅Ⅴ＋",
+      "zh-TW": "挑釁 V＋"
+    },
+    "Divergence III+": {
+      "ja": "ダイバージェンス III＋",
+      "zh-CN": "分歧Ⅲ＋",
+      "zh-TW": "命運分歧 III＋"
+    },
+    "Steady Focus V+": {
+      "ja": "チャージ強化 V＋",
+      "zh-CN": "蓄力强化Ⅴ＋",
+      "zh-TW": "蓄力強化 V＋"
+    },
+    "Celestial Aqua III+": {
+      "ja": "天星の雪 III＋",
+      "zh-CN": "天星之雪Ⅲ＋",
+      "zh-TW": "天星之雪 III＋"
+    },
+    "Spirit Edge's Rally+": {
+      "ja": "剣聖の練気＋",
+      "zh-CN": "剑圣的炼气＋",
+      "zh-TW": "劍聖的練氣＋"
+    },
+    "Celestial Incendo III+": {
+      "ja": "天星の焔 III＋",
+      "zh-CN": "天星之焰Ⅲ＋",
+      "zh-TW": "天星之焰 III＋"
+    },
+    "Poison Resistance V+": {
+      "ja": "毒耐性 V＋",
+      "zh-CN": "中毒抗性Ⅴ＋",
+      "zh-TW": "中毒抗性 V＋"
+    },
+    "Helmsman's Warpath": {
+      "ja": "操舵士の戦気",
+      "zh-CN": "舵手的战气",
+      "zh-TW": "操舵士的戰氣"
+    },
+    "Celestial Nyx III+": {
+      "ja": "天星の煉 III＋",
+      "zh-CN": "天星之炼Ⅲ＋",
+      "zh-TW": "天星之煉 III＋"
+    },
+    "Celestial Aqua II": {
+      "ja": "天星の雪 II",
+      "zh-CN": "天星之雪Ⅱ",
+      "zh-TW": "天星之雪 II"
+    },
+    "Skill Sealed Resistance V+": {
+      "ja": "アビリティ封印耐性 V＋",
+      "zh-CN": "能力封印抗性Ⅴ＋",
+      "zh-TW": "技能封印抗性 V＋"
+    },
+    "Thunderwolf's Acuity+": {
+      "ja": "雷狼の慧眼＋",
+      "zh-CN": "雷狼的慧眼＋",
+      "zh-TW": "雷狼的慧眼＋"
+    },
+    "Celestial Terra IV": {
+      "ja": "天星の界 IV",
+      "zh-CN": "天星之界Ⅳ",
+      "zh-TW": "天星之界 IV"
+    },
+    "Fast Learner V+": {
+      "ja": "取得経験値 V＋",
+      "zh-CN": "获得经验值Ⅴ＋",
+      "zh-TW": "取得經驗值 V＋"
+    },
+    "Regen V+": {
+      "ja": "リジェネレーション V＋",
+      "zh-CN": "自愈Ⅴ＋",
+      "zh-TW": "淨癒再生 V＋"
+    },
+    "Dizzy Resistance V+": {
+      "ja": "気絶耐性 V＋",
+      "zh-CN": "昏迷抗性Ⅴ＋",
+      "zh-TW": "昏厥抗性 V＋"
+    },
+    "Slow Resistance V+": {
+      "ja": "スロウ耐性 V＋",
+      "zh-CN": "缓速抗性Ⅴ＋",
+      "zh-TW": "緩速抗性 V＋"
+    },
+    "Celestial Incendo IV": {
+      "ja": "天星の焔 IV",
+      "zh-CN": "天星之焰Ⅳ",
+      "zh-TW": "天星之焰 IV"
+    },
+    "Celestial Lumen IV+": {
+      "ja": "天星の煌 IV＋",
+      "zh-CN": "天星之煌Ⅳ＋",
+      "zh-TW": "天星之煌 IV＋"
+    },
+    "Thunderwolf's Awakening+": {
+      "ja": "雷狼の覚醒＋",
+      "zh-CN": "雷狼之觉醒＋",
+      "zh-TW": "雷狼的覺醒＋"
+    },
+    "Potion Hoarder V+": {
+      "ja": "ポーション所持数 V＋",
+      "zh-CN": "药水携带数Ⅴ＋",
+      "zh-TW": "藥水持有數量 V＋"
+    },
+    "Bladequeen's Circuit": {
+      "ja": "刃姫の輪舞",
+      "zh-CN": "刃姬的轮舞曲",
+      "zh-TW": "刃姬的輪舞"
+    },
+    "Nimble Onslaught V+": {
+      "ja": "明鏡止水 V＋",
+      "zh-CN": "明镜止水Ⅴ＋",
+      "zh-TW": "明鏡止水 V＋"
+    },
+    "Stout Heart+": {
+      "ja": "怯み無効＋",
+      "zh-CN": "霸体＋",
+      "zh-TW": "畏怯無效＋"
+    },
+    "Fatebreaker III+": {
+      "ja": "天上無頼 III＋",
+      "zh-CN": "浪迹天涯Ⅲ＋",
+      "zh-TW": "天上無敵 III＋"
+    },
+    "Burn Resistance V+": {
+      "ja": "灼熱耐性 V＋",
+      "zh-CN": "灼热抗性Ⅴ＋",
+      "zh-TW": "灼熱抗性 V＋"
+    },
+    "Gladiator's Frenzy+": {
+      "ja": "狼王の激情＋",
+      "zh-CN": "狼王的激昂＋",
+      "zh-TW": "狼王的激情＋"
+    },
+    "Sandtomb Resistance V+": {
+      "ja": "砂だるま耐性 V＋",
+      "zh-CN": "泥沙抗性Ⅴ＋",
+      "zh-TW": "纏沙抗性 V＋"
+    },
+    "Autorevive V+": {
+      "ja": "自動復活 V＋",
+      "zh-CN": "自动复活Ⅴ＋",
+      "zh-TW": "自動復活 V＋"
+    },
+    "Enchantress's Warpath+": {
+      "ja": "転世の戦気＋",
+      "zh-CN": "转世的战气＋",
+      "zh-TW": "轉世的戰氣＋"
+    },
+    "Eternal Rage's Warpath+": {
+      "ja": "古今無双の戦気＋",
+      "zh-CN": "古今无双的战气＋",
+      "zh-TW": "古今無雙的戰氣＋"
+    },
+    "Drain V+": {
+      "ja": "HP吸収 V＋",
+      "zh-CN": "HP吸收Ⅴ＋",
+      "zh-TW": "HP吸收 V＋"
+    },
+    "Celestial Ventus V": {
+      "ja": "天星の凪 V",
+      "zh-CN": "天星之止息Ⅴ",
+      "zh-TW": "天星之風止 V"
+    },
+    "Guts V+": {
+      "ja": "ガッツ V＋",
+      "zh-CN": "豪胆Ⅴ＋",
+      "zh-TW": "堅毅 V＋"
+    },
+    "Low Profile V+": {
+      "ja": "ステルス V＋",
+      "zh-CN": "匿踪Ⅴ＋",
+      "zh-TW": "隱匿 V＋"
+    },
+    "Spartan Echo": {
+      "ja": "スパルタ",
+      "zh-CN": "斯巴达",
+      "zh-TW": "斯巴達"
+    },
+    "Holy Knight's Warpath": {
+      "ja": "聖騎士の戦気",
+      "zh-CN": "圣骑士的战气",
+      "zh-TW": "聖騎士的戰氣"
+    },
+    "Spirit Edge's Fury": {
+      "ja": "剣聖の閃刃",
+      "zh-CN": "剑圣的闪刃",
+      "zh-TW": "劍聖的閃刃"
+    },
+    "Auto Potion+": {
+      "ja": "オートポーション＋",
+      "zh-CN": "自动药水＋",
+      "zh-TW": "自動藥水＋"
+    },
+    "Dark Huntress's Volley": {
+      "ja": "魔眼の万箭",
+      "zh-CN": "魔眼的万箭",
+      "zh-TW": "魔眼的萬箭"
+    },
+    "Hero's Warpath": {
+      "ja": "勇士の戦気",
+      "zh-CN": "勇士的战气",
+      "zh-TW": "勇士的戰氣"
+    },
+    "Celestial Aqua I": {
+      "ja": "天星の雪",
+      "zh-CN": "天星之雪",
+      "zh-TW": "天星之雪"
+    },
+    "Supreme Primarch's Awe+": {
+      "ja": "天司長の霊威＋",
+      "zh-CN": "天司长的灵威＋",
+      "zh-TW": "天司長的靈威＋"
+    },
+    "Celestial Nyx V+": {
+      "ja": "天星の煉 V＋",
+      "zh-CN": "天星之炼Ⅴ＋",
+      "zh-TW": "天星之煉 V＋"
+    },
+    "Phantasm's Warpath": {
+      "ja": "幽幻の戦気",
+      "zh-CN": "幽幻的战气",
+      "zh-TW": "幽幻的戰氣"
+    },
+    "The Black's Warpath": {
+      "ja": "黒の戦気",
+      "zh-CN": "黑龙的战气",
+      "zh-TW": "黑之戰氣"
+    },
+    "Gladiator's Warpath+": {
+      "ja": "狼王の戦気＋",
+      "zh-CN": "狼王的战气＋",
+      "zh-TW": "狼王的戰氣＋"
+    },
+    "Crabs Are Forever+": {
+      "ja": "永遠のカニジーン＋",
+      "zh-CN": "永恒钳蟹因子＋",
+      "zh-TW": "永遠的蟹因子＋"
+    },
+    "Two-Crown Boundary+": {
+      "ja": "涯ての二王＋",
+      "zh-CN": "涯之二王＋",
+      "zh-TW": "盡涯的二王＋"
+    },
+    "Mage's Warpath+": {
+      "ja": "魔導士の戦気＋",
+      "zh-CN": "魔法师的战气＋",
+      "zh-TW": "魔導士的戰氣＋"
+    },
+    "Gamma+": {
+      "ja": "ガンマ・コード＋",
+      "zh-CN": "γ秘纹＋",
+      "zh-TW": "伽馬‧符碼＋"
+    },
+    "Dragonslayer's Warpath": {
+      "ja": "竜殺しの戦気",
+      "zh-CN": "屠龙者的战气",
+      "zh-TW": "屠龍的戰氣"
+    },
+    "Gladiator's Warpath": {
+      "ja": "狼王の戦気",
+      "zh-CN": "狼王的战气",
+      "zh-TW": "狼王的戰氣"
+    },
+    "SBA Sealed Resistance V+": {
+      "ja": "奥義封印耐性 V＋",
+      "zh-CN": "奥义封印抗性Ⅴ＋",
+      "zh-TW": "奧義封印抗性 V＋"
+    },
+    "Celestial Ventus IV+": {
+      "ja": "天星の凪 IV＋",
+      "zh-CN": "天星之止息Ⅳ＋",
+      "zh-TW": "天星之風止 IV＋"
+    },
+    "Potent Greens+": {
+      "ja": "万能薬＋",
+      "zh-CN": "万能药＋",
+      "zh-TW": "萬能藥＋"
+    },
+    "Celestial Lumen I": {
+      "ja": "天星の煌",
+      "zh-CN": "天星之煌",
+      "zh-TW": "天星之煌"
+    },
+    "Holy Knight's Warpath+": {
+      "ja": "聖騎士の戦気＋",
+      "zh-CN": "圣骑士的战气＋",
+      "zh-TW": "聖騎士的戰氣＋"
+    },
+    "Lord's Warpath+": {
+      "ja": "王者の戦気＋",
+      "zh-CN": "王者的战气＋",
+      "zh-TW": "王者的戰氣＋"
+    },
+    "Divergence IV+": {
+      "ja": "ダイバージェンス IV＋",
+      "zh-CN": "分歧Ⅳ＋",
+      "zh-TW": "命運分歧 IV＋"
+    },
+    "Lord's Warpath": {
+      "ja": "王者の戦気",
+      "zh-CN": "王者的战气",
+      "zh-TW": "王者的戰氣"
+    },
+    "Fatebreaker V": {
+      "ja": "天上無頼 V",
+      "zh-CN": "浪迹天涯Ⅴ",
+      "zh-TW": "天上無敵 V"
+    },
+    "Defense Down Resistance V+": {
+      "ja": "防御DOWN耐性 V＋",
+      "zh-CN": "防御DOWN抗性Ⅴ＋",
+      "zh-TW": "防禦DOWN抗性 V＋"
+    },
+    "Fatebreaker IV+": {
+      "ja": "天上無頼 IV＋",
+      "zh-CN": "浪迹天涯Ⅳ＋",
+      "zh-TW": "天上無敵 IV＋"
+    },
+    "Rose's Warpath+": {
+      "ja": "薔薇の戦気＋",
+      "zh-CN": "玫瑰的战气＋",
+      "zh-TW": "薔薇的戰氣＋"
+    },
+    "Ultramarine's Warpath+": {
+      "ja": "群青の戦気＋",
+      "zh-CN": "群青的战气＋",
+      "zh-TW": "群青的戰氣＋"
+    },
+    "Spirit Edge's Rally": {
+      "ja": "剣聖の練気",
+      "zh-CN": "剑圣的炼气",
+      "zh-TW": "劍聖的練氣"
+    },
+    "Celestial Incendo IV+": {
+      "ja": "天星の焔 IV＋",
+      "zh-CN": "天星之焰Ⅳ＋",
+      "zh-TW": "天星之焰 IV＋"
+    },
+    "Fatebreaker I": {
+      "ja": "天上無頼",
+      "zh-CN": "浪迹天涯",
+      "zh-TW": "天上無敵"
+    },
+    "Celestial Incendo V": {
+      "ja": "天星の焔 V",
+      "zh-CN": "天星之焰Ⅴ",
+      "zh-TW": "天星之焰 V"
+    },
+    "Instilling Vigor": {
+      "ja": "修練の雫",
+      "zh-CN": "修炼甘露",
+      "zh-TW": "修練之露"
+    },
+    "Celestial Nyx V": {
+      "ja": "天星の煉 V",
+      "zh-CN": "天星之炼Ⅴ",
+      "zh-TW": "天星之煉 V"
+    },
+    "Celestial Aqua III": {
+      "ja": "天星の雪 III",
+      "zh-CN": "天星之雪Ⅲ",
+      "zh-TW": "天星之雪 III"
+    },
+    "Ebony's Warpath": {
+      "ja": "冥闇の戦気",
+      "zh-CN": "冥暗的战气",
+      "zh-TW": "冥闇的戰氣"
+    },
+    "Enchantress's Awakening+": {
+      "ja": "転世の覚醒＋",
+      "zh-CN": "转世之觉醒＋",
+      "zh-TW": "轉世的覺醒＋"
+    },
+    "Enchantress's Rhythm": {
+      "ja": "転世の躍動",
+      "zh-CN": "转世的跃动",
+      "zh-TW": "轉世的躍動"
+    },
+    "Supreme Primarch's Warpath+": {
+      "ja": "天司長の戦気＋",
+      "zh-CN": "天司长的战气＋",
+      "zh-TW": "天司長的戰氣＋"
+    },
+    "Celestial Nyx IV": {
+      "ja": "天星の煉 IV",
+      "zh-CN": "天星之炼Ⅳ",
+      "zh-TW": "天星之煉 IV"
+    },
+    "Founder's Warpath": {
+      "ja": "極致の戦気",
+      "zh-CN": "极致的战气",
+      "zh-TW": "極致的戰氣"
+    },
+    "Thunderwolf's Warpath": {
+      "ja": "雷狼の戦気",
+      "zh-CN": "雷狼的战气",
+      "zh-TW": "雷狼的戰氣"
+    },
+    "Celestial Ventus V+": {
+      "ja": "天星の凪 V＋",
+      "zh-CN": "天星之止息Ⅴ＋",
+      "zh-TW": "天星之風止 V＋"
+    },
+    "Guardian's Warpath": {
+      "ja": "守護者の戦気",
+      "zh-CN": "守护者的战气",
+      "zh-TW": "守護者的戰氣"
+    },
+    "Enchantress's Blessing+": {
+      "ja": "転世の恩寵＋",
+      "zh-CN": "转世的恩宠＋",
+      "zh-TW": "轉世的恩寵＋"
+    },
+    "Quick Cooldown V+": {
+      "ja": "クイックアビリティ V＋",
+      "zh-CN": "迅捷能力Ⅴ＋",
+      "zh-TW": "技能加速 V＋"
+    },
+    "Celestial Incendo V+": {
+      "ja": "天星の焔 V＋",
+      "zh-CN": "天星之焰Ⅴ＋",
+      "zh-TW": "天星之焰 V＋"
+    },
+    "In a Pinch": {
+      "ja": "漆黒の絆",
+      "zh-CN": "漆黑之谊",
+      "zh-TW": "漆黑羈絆"
+    },
+    "Crimson's Warpath": {
+      "ja": "真紅の戦気",
+      "zh-CN": "真红的战气",
+      "zh-TW": "鮮紅的戰氣"
+    },
+    "Immortal Shell+": {
+      "ja": "恐るべき漆黒のカニジーン＋",
+      "zh-CN": "可怕的漆黑钳蟹因子＋",
+      "zh-TW": "令人畏懼的漆黑蟹因子＋"
+    },
+    "Founder's Warpath+": {
+      "ja": "極致の戦気＋",
+      "zh-CN": "极致的战气＋",
+      "zh-TW": "極致的戰氣＋"
+    },
+    "Spirit Edge's Warpath": {
+      "ja": "剣聖の戦気",
+      "zh-CN": "剑圣的战气",
+      "zh-TW": "劍聖的戰氣"
+    },
+    "Spirit Edge's Awakening+": {
+      "ja": "剣聖の覚醒＋",
+      "zh-CN": "剑圣之觉醒＋",
+      "zh-TW": "劍聖的覺醒＋"
+    },
+    "Paralysis Resistance V+": {
+      "ja": "麻痺耐性 V＋",
+      "zh-CN": "麻痹抗性Ⅴ＋",
+      "zh-TW": "麻痺抗性 V＋"
+    },
+    "Bladequeen's Warpath": {
+      "ja": "刃姫の戦気",
+      "zh-CN": "刃姬的战气",
+      "zh-TW": "刃姬的戰氣"
+    },
+    "Cascade V+": {
+      "ja": "怒涛 V＋",
+      "zh-CN": "怒涛Ⅴ＋",
+      "zh-TW": "怒濤 V＋"
+    },
+    "Attack Down Resistance V+": {
+      "ja": "攻撃DOWN耐性 V＋",
+      "zh-CN": "攻击DOWN抗性Ⅴ＋",
+      "zh-TW": "攻擊DOWN抗性 V＋"
+    },
+    "Celestial Nyx III": {
+      "ja": "天星の煉 III",
+      "zh-CN": "天星之炼Ⅲ",
+      "zh-TW": "天星之煉 III"
+    },
+    "Celestial Lumen V": {
+      "ja": "天星の煌 V",
+      "zh-CN": "天星之煌Ⅴ",
+      "zh-TW": "天星之煌 V"
+    },
+    "Celestial Lumen III+": {
+      "ja": "天星の煌 III＋",
+      "zh-CN": "天星之煌Ⅲ＋",
+      "zh-TW": "天星之煌 III＋"
+    },
+    "Celestial Nyx II": {
+      "ja": "天星の煉 II",
+      "zh-CN": "天星之炼Ⅱ",
+      "zh-TW": "天星之煉 II"
+    },
+    "Swordmaster's Warpath+": {
+      "ja": "変幻自在の戦気＋",
+      "zh-CN": "变幻自如的战气＋",
+      "zh-TW": "變化自如的戰氣＋"
+    },
+    "Enchantress's Blessing": {
+      "ja": "転世の恩寵",
+      "zh-CN": "转世的恩宠",
+      "zh-TW": "轉世的恩寵"
+    },
+    "Divergence IV": {
+      "ja": "ダイバージェンス IV",
+      "zh-CN": "分歧Ⅳ",
+      "zh-TW": "命運分歧 IV"
+    },
+    "Divergence V+": {
+      "ja": "ダイバージェンス V＋",
+      "zh-CN": "分歧Ⅴ＋",
+      "zh-TW": "命運分歧 V＋"
+    },
+    "Veteran's Warpath": {
+      "ja": "老兵の戦気",
+      "zh-CN": "老兵的战气",
+      "zh-TW": "老兵的戰氣"
+    },
+    "Improved Healing V+": {
+      "ja": "回復性能 V＋",
+      "zh-CN": "回复性能Ⅴ＋",
+      "zh-TW": "回復性能 V＋"
+    },
+    "Supreme Primarch's Nimbus+": {
+      "ja": "天司長の風雅＋",
+      "zh-CN": "天司长的风雅＋",
+      "zh-TW": "天司長的風雅＋"
+    },
+    "Celestial Ventus IV": {
+      "ja": "天星の凪 IV",
+      "zh-CN": "天星之止息Ⅳ",
+      "zh-TW": "天星之風止 IV"
+    },
+    "Precise Wrath V+": {
+      "ja": "怒髪天 V＋",
+      "zh-CN": "怒发冲冠Ⅴ＋",
+      "zh-TW": "怒髮衝冠 V＋"
+    },
+    "Celestial Ventus III+": {
+      "ja": "天星の凪 III＋",
+      "zh-CN": "天星之止息Ⅲ＋",
+      "zh-TW": "天星之風止 III＋"
+    },
+    "Crabmiration": {
+      "ja": "アルティメット・カニジーン",
+      "zh-CN": "终极钳蟹因子",
+      "zh-TW": "究極‧蟹因子"
+    },
+    "Celestial Ventus I": {
+      "ja": "天星の凪",
+      "zh-CN": "天星之止息",
+      "zh-TW": "天星之風止"
+    },
+    "Celestial Terra I": {
+      "ja": "天星の界",
+      "zh-CN": "天星之界",
+      "zh-TW": "天星之界"
+    },
+    "Eternal Rage's Warpath": {
+      "ja": "古今無双の戦気",
+      "zh-CN": "古今无双的战气",
+      "zh-TW": "古今無雙的戰氣"
+    },
+    "Fatebreaker II": {
+      "ja": "天上無頼 II",
+      "zh-CN": "浪迹天涯Ⅱ",
+      "zh-TW": "天上無敵 II"
+    },
+    "Dark Huntress's Surge": {
+      "ja": "魔眼の凛翔",
+      "zh-CN": "魔眼的凛翔",
+      "zh-TW": "魔眼的凜翔"
+    },
+    "Celestial Terra V": {
+      "ja": "天星の界 V",
+      "zh-CN": "天星之界Ⅴ",
+      "zh-TW": "天星之界 V"
+    },
+    "Gladiator's Awakening+": {
+      "ja": "狼王の覚醒＋",
+      "zh-CN": "狼王之觉醒＋",
+      "zh-TW": "狼王的覺醒＋"
+    },
+    "White Dragon's Warpath+": {
+      "ja": "白竜の戦気＋",
+      "zh-CN": "白龙的战气＋",
+      "zh-TW": "白龍的戰氣＋"
+    },
+    "Celestial Aqua V": {
+      "ja": "天星の雪 V",
+      "zh-CN": "天星之雪Ⅴ",
+      "zh-TW": "天星之雪 V"
+    },
+    "Dark Huntress's Awakening+": {
+      "ja": "魔眼の覚醒＋",
+      "zh-CN": "魔眼之觉醒＋",
+      "zh-TW": "魔眼的覺醒＋"
+    },
+    "Celestial Terra III": {
+      "ja": "天星の界 III",
+      "zh-CN": "天星之界Ⅲ",
+      "zh-TW": "天星之界 III"
+    },
+    "Celestial Lumen IV": {
+      "ja": "天星の煌 IV",
+      "zh-CN": "天星之煌Ⅳ",
+      "zh-TW": "天星之煌 IV"
+    },
+    "Bladequeen's Serenade": {
+      "ja": "刃姫の小夜曲",
+      "zh-CN": "刃姬的小夜曲",
+      "zh-TW": "刃姬的小夜曲"
+    },
+    "Alpha+": {
+      "ja": "アルファ・コード＋",
+      "zh-CN": "α秘纹＋",
+      "zh-TW": "阿爾法‧符碼＋"
+    },
+    "Super Ultimate Perfect Dodge": {
+      "ja": "スーパーアルティメットJust回避",
+      "zh-CN": "超终极精准躲避",
+      "zh-TW": "超究極精準閃避"
+    },
+    "The Black's Impulse": {
+      "ja": "黒の一躍",
+      "zh-CN": "黑龙的折跃",
+      "zh-TW": "黑之飛躍"
+    },
+    "Ultramarine's Awakening+": {
+      "ja": "群青の覚醒＋",
+      "zh-CN": "群青之觉醒＋",
+      "zh-TW": "群青的覺醒＋"
+    },
+    "Celestial Incendo III": {
+      "ja": "天星の焔 III",
+      "zh-CN": "天星之焰Ⅲ",
+      "zh-TW": "天星之焰 III"
+    },
+    "Bladequeen's Circuit+": {
+      "ja": "刃姫の輪舞＋",
+      "zh-CN": "刃姬的轮舞曲＋",
+      "zh-TW": "刃姬的輪舞＋"
+    },
+    "Rupie Tycoon V+": {
+      "ja": "取得ルピ V＋",
+      "zh-CN": "获得金币Ⅴ＋",
+      "zh-TW": "取得盧比 V＋"
+    },
+    "Versalis Heart+": {
+      "ja": "オルタナティブハート＋",
+      "zh-CN": "异能之心＋",
+      "zh-TW": "替身之心＋"
+    },
+    "The Black's Mark": {
+      "ja": "黒の呪印",
+      "zh-CN": "黑龙的咒印",
+      "zh-TW": "黑之咒印"
+    },
+    "The Black's Warpath+": {
+      "ja": "黒の戦気＋",
+      "zh-CN": "黑龙的战气＋",
+      "zh-TW": "黑之戰氣＋"
+    },
+    "Fearless Heart": {
+      "ja": "ブレイブハート",
+      "zh-CN": "英勇之心",
+      "zh-TW": "英勇之心"
+    },
+    "Ultramarine's Flash+": {
+      "ja": "群青の剣閃＋",
+      "zh-CN": "群青的剑光＋",
+      "zh-TW": "群青的劍閃＋"
+    },
+    "Spirit Edge's Warpath+": {
+      "ja": "剣聖の戦気＋",
+      "zh-CN": "剑圣的战气＋",
+      "zh-TW": "劍聖的戰氣＋"
+    },
+    "Celestial Ventus II": {
+      "ja": "天星の凪 II",
+      "zh-CN": "天星之止息Ⅱ",
+      "zh-TW": "天星之風止 II"
+    },
+    "Mage's Warpath": {
+      "ja": "魔導士の戦気",
+      "zh-CN": "魔法师的战气",
+      "zh-TW": "魔導士的戰氣"
+    },
+    "Hero's Warpath+": {
+      "ja": "勇士の戦気＋",
+      "zh-CN": "勇士的战气＋",
+      "zh-TW": "勇士的戰氣＋"
+    },
+    "Celestial Aqua IV+": {
+      "ja": "天星の雪 IV＋",
+      "zh-CN": "天星之雪Ⅳ＋",
+      "zh-TW": "天星之雪 IV＋"
+    },
+    "Divergence V": {
+      "ja": "ダイバージェンス V",
+      "zh-CN": "分歧Ⅴ",
+      "zh-TW": "命運分歧 V"
+    },
+    "The Black's Awakening+": {
+      "ja": "黒の覚醒＋",
+      "zh-CN": "黑龙之觉醒＋",
+      "zh-TW": "黑的覺醒＋"
+    },
+    "Celestial Incendo II": {
+      "ja": "天星の焔 II",
+      "zh-CN": "天星之焰Ⅱ",
+      "zh-TW": "天星之焰 II"
+    },
+    "Versalis Heart": {
+      "ja": "オルタナティブハート",
+      "zh-CN": "异能之心",
+      "zh-TW": "替身之心"
+    },
+    "Blight Resistance V+": {
+      "ja": "災禍耐性 V＋",
+      "zh-CN": "灾祸抗性Ⅴ＋",
+      "zh-TW": "災禍抗性 V＋"
+    },
+    "Supreme Primarch's Nimbus": {
+      "ja": "天司長の風雅",
+      "zh-CN": "天司长的风雅",
+      "zh-TW": "天司長的風雅"
+    },
+    "Celestial Terra II": {
+      "ja": "天星の界 II",
+      "zh-CN": "天星之界Ⅱ",
+      "zh-TW": "天星之界 II"
+    },
+    "Fortifying Vigor": {
+      "ja": "強健の雫",
+      "zh-CN": "强健甘露",
+      "zh-TW": "強健之露"
+    },
+    "Guardian's Warpath+": {
+      "ja": "守護者の戦気＋",
+      "zh-CN": "守护者的战气＋",
+      "zh-TW": "守護者的戰氣＋"
+    },
+    "Dark Huntress's Warpath+": {
+      "ja": "魔眼の戦気＋",
+      "zh-CN": "魔眼的战气＋",
+      "zh-TW": "魔眼的戰氣＋"
+    },
+    "Spirit Edge's Fury+": {
+      "ja": "剣聖の閃刃＋",
+      "zh-CN": "剑圣的闪刃＋",
+      "zh-TW": "劍聖的閃刃＋"
+    },
+    "Dark Huntress's Warpath": {
+      "ja": "魔眼の戦気",
+      "zh-CN": "魔眼的战气",
+      "zh-TW": "魔眼的戰氣"
+    },
+    "Gladiator's Top": {
+      "ja": "狼王の大独楽",
+      "zh-CN": "狼王的大转轮",
+      "zh-TW": "狼王的大迴旋"
+    },
+    "Rose's Warpath": {
+      "ja": "薔薇の戦気",
+      "zh-CN": "玫瑰的战气",
+      "zh-TW": "薔薇的戰氣"
+    },
+    "Firm Stance V+": {
+      "ja": "不動 V＋",
+      "zh-CN": "不动Ⅴ＋",
+      "zh-TW": "不動 V＋"
+    },
+    "Celestial Ventus III": {
+      "ja": "天星の凪 III",
+      "zh-CN": "天星之止息Ⅲ",
+      "zh-TW": "天星之風止 III"
+    },
+    "Sumo Force": {
+      "ja": "スモウォーフォース",
+      "zh-CN": "相扑斗力",
+      "zh-TW": "相撲之力"
+    },
+    "Ebony's Warpath+": {
+      "ja": "冥闇の戦気＋",
+      "zh-CN": "冥暗的战气＋",
+      "zh-TW": "冥闇的戰氣＋"
+    },
+    "Celestial Lumen II": {
+      "ja": "天星の煌 II",
+      "zh-CN": "天星之煌Ⅱ",
+      "zh-TW": "天星之煌 II"
+    },
+    "Ultramarine's Warpath": {
+      "ja": "群青の戦気",
+      "zh-CN": "群青的战气",
+      "zh-TW": "群青的戰氣"
+    },
+    "Supreme Primarch's Awakening+": {
+      "ja": "天司長の覚醒＋",
+      "zh-CN": "天司长之觉醒＋",
+      "zh-TW": "天司長的覺醒＋"
+    },
+    "Enchantress's Rhythm+": {
+      "ja": "転世の躍動＋",
+      "zh-CN": "转世的跃动＋",
+      "zh-TW": "轉世的躍動＋"
+    },
+    "Helmsman's Warpath+": {
+      "ja": "操舵士の戦気＋",
+      "zh-CN": "舵手的战气＋",
+      "zh-TW": "操舵士的戰氣＋"
+    },
+    "Berserker Echo": {
+      "ja": "ベルセルク",
+      "zh-CN": "狂战士",
+      "zh-TW": "狂戰士"
+    },
+    "Divergence III": {
+      "ja": "ダイバージェンス III",
+      "zh-CN": "分歧Ⅲ",
+      "zh-TW": "命運分歧 III"
+    },
+    "Gladiator's Frenzy": {
+      "ja": "狼王の激情",
+      "zh-CN": "狼王的激昂",
+      "zh-TW": "狼王的激情"
+    },
+    "Crimson's Warpath+": {
+      "ja": "真紅の戦気＋",
+      "zh-CN": "真红的战气＋",
+      "zh-TW": "鮮紅的戰氣＋"
+    },
+    "Seven-Star Boundary+": {
+      "ja": "涯ての七星＋",
+      "zh-CN": "涯之七星＋",
+      "zh-TW": "盡涯的七星＋"
+    },
+    "Supreme Primarch's Awe": {
+      "ja": "天司長の霊威",
+      "zh-CN": "天司长的灵威",
+      "zh-TW": "天司長的靈威"
+    },
+    "Veteran's Warpath+": {
+      "ja": "老兵の戦気＋",
+      "zh-CN": "老兵的战气＋",
+      "zh-TW": "老兵的戰氣＋"
+    },
+    "Celestial Incendo I": {
+      "ja": "天星の焔",
+      "zh-CN": "天星之焰",
+      "zh-TW": "天星之焰"
+    },
+    "Supreme Primarch's Warpath": {
+      "ja": "天司長の戦気",
+      "zh-CN": "天司长的战气",
+      "zh-TW": "天司長的戰氣"
+    },
+    "Celestial Nyx I": {
+      "ja": "天星の煉",
+      "zh-CN": "天星之炼",
+      "zh-TW": "天星之煉"
+    },
+    "Butterfly's Warpath+": {
+      "ja": "斬姫の戦気＋",
+      "zh-CN": "斩姬的战气＋",
+      "zh-TW": "斬姬的戰氣＋"
+    },
+    "Celestial Aqua IV": {
+      "ja": "天星の雪 IV",
+      "zh-CN": "天星之雪Ⅳ",
+      "zh-TW": "天星之雪 IV"
+    },
+    "Darkflame Resistance V+": {
+      "ja": "レジストオルタ V＋",
+      "zh-CN": "异能耐受Ⅴ＋",
+      "zh-TW": "抵禦異靈 V＋"
+    },
+    "Ultramarine's Adversity+": {
+      "ja": "群青の逆境＋",
+      "zh-CN": "群青的逆境＋",
+      "zh-TW": "群青的逆境＋"
+    },
+    "Swordmaster's Warpath": {
+      "ja": "変幻自在の戦気",
+      "zh-CN": "变幻自如的战气",
+      "zh-TW": "變化自如的戰氣"
+    },
+    "Ultramarine's Flash": {
+      "ja": "群青の剣閃",
+      "zh-CN": "群青的剑光",
+      "zh-TW": "群青的劍閃"
+    },
+    "Bladequeen's Awakening+": {
+      "ja": "刃姫の覚醒＋",
+      "zh-CN": "刃姬之觉醒＋",
+      "zh-TW": "刃姬的覺醒＋"
+    },
+    "Thunderwolf's Warpath+": {
+      "ja": "雷狼の戦気＋",
+      "zh-CN": "雷狼的战气＋",
+      "zh-TW": "雷狼的戰氣＋"
+    },
+    "Enchantress's Warpath": {
+      "ja": "転世の戦気",
+      "zh-CN": "转世的战气",
+      "zh-TW": "轉世的戰氣"
+    },
+    "Dark Huntress's Surge+": {
+      "ja": "魔眼の凛翔＋",
+      "zh-CN": "魔眼的凛翔＋",
+      "zh-TW": "魔眼的凜翔＋"
+    },
+    "Fatebreaker III": {
+      "ja": "天上無頼 III",
+      "zh-CN": "浪迹天涯Ⅲ",
+      "zh-TW": "天上無敵 III"
+    },
+    "Gilding Vigor": {
+      "ja": "幸運の雫",
+      "zh-CN": "幸运甘露",
+      "zh-TW": "幸運之露"
+    },
+    "Celestial Aqua V+": {
+      "ja": "天星の雪 V＋",
+      "zh-CN": "天星之雪Ⅴ＋",
+      "zh-TW": "天星之雪 V＋"
+    },
+    "Divergence I": {
+      "ja": "ダイバージェンス",
+      "zh-CN": "分歧",
+      "zh-TW": "命運分歧"
+    },
+    "Dragonslayer's Warpath+": {
+      "ja": "竜殺しの戦気＋",
+      "zh-CN": "屠龙者的战气＋",
+      "zh-TW": "屠龍的戰氣＋"
+    },
+    "Ultramarine's Adversity": {
+      "ja": "群青の逆境",
+      "zh-CN": "群青的逆境",
+      "zh-TW": "群青的逆境"
+    },
+    "Fatebreaker IV": {
+      "ja": "天上無頼 IV",
+      "zh-CN": "浪迹天涯Ⅳ",
+      "zh-TW": "天上無敵 IV"
+    },
+    "Phantasm's Warpath+": {
+      "ja": "幽幻の戦気＋",
+      "zh-CN": "幽幻的战气＋",
+      "zh-TW": "幽幻的戰氣＋"
+    },
+    "White Dragon's Warpath": {
+      "ja": "白竜の戦気",
+      "zh-CN": "白龙的战气",
+      "zh-TW": "白龍的戰氣"
+    },
+    "Dark Huntress's Volley+": {
+      "ja": "魔眼の万箭＋",
+      "zh-CN": "魔眼的万箭＋",
+      "zh-TW": "魔眼的萬箭＋"
+    },
+    "Bladequeen's Warpath+": {
+      "ja": "刃姫の戦気＋",
+      "zh-CN": "刃姬的战气＋",
+      "zh-TW": "刃姬的戰氣＋"
+    },
+    "Bladequeen's Serenade+": {
+      "ja": "刃姫の小夜曲＋",
+      "zh-CN": "刃姬的小夜曲＋",
+      "zh-TW": "刃姬的小夜曲＋"
+    },
+    "Beta+": {
+      "ja": "ベータ・コード＋",
+      "zh-CN": "β秘纹＋",
+      "zh-TW": "貝塔‧符碼＋"
+    },
+    "Held Under Resistance V+": {
+      "ja": "水牢耐性 V＋",
+      "zh-CN": "水牢抗性Ⅴ＋",
+      "zh-TW": "水牢抗性 V＋"
+    },
+    "Glaciate Resistance V+": {
+      "ja": "氷結耐性 V＋",
+      "zh-CN": "冰冻抗性Ⅴ＋",
+      "zh-TW": "冰結抗性 V＋"
+    },
+    "Ain+": {
+      "ja": "アイン＋",
+      "zh-CN": "无态＋",
+      "zh-TW": "Ain＋"
+    },
+    "Greater Aegis I": {
+      "ja": "金剛",
+      "zh-CN": "金刚",
+      "zh-TW": "金剛"
+    },
+    "Gladiator's Top+": {
+      "ja": "狼王の大独楽＋",
+      "zh-CN": "狼王的大转轮＋",
+      "zh-TW": "狼王的大迴旋＋"
+    },
+    "Butterfly's Warpath": {
+      "ja": "斬姫の戦気",
+      "zh-CN": "斩姬的战气",
+      "zh-TW": "斬姬的戰氣"
+    },
+    "Thunderwolf's Recharge+": {
+      "ja": "雷狼の装弾＋",
+      "zh-CN": "雷狼的弹匣＋",
+      "zh-TW": "雷狼的槍彈＋"
+    },
+    "Auto Potion": {
+      "ja": "オートポーション",
+      "zh-CN": "自动药水",
+      "zh-TW": "自動藥水"
     }
   },
   "traits": {
@@ -3902,6 +5007,21 @@ export const INVENTORY_TERMS = {
       "ja": "白竜の戦気",
       "zh-CN": "白龙的战气",
       "zh-TW": "白龍的戰氣"
+    },
+    "Fortifying Vigor": {
+      "ja": "強健の雫",
+      "zh-CN": "强健甘露",
+      "zh-TW": "強健之露"
+    },
+    "Instilling Vigor": {
+      "ja": "修練の雫",
+      "zh-CN": "修炼甘露",
+      "zh-TW": "修練之露"
+    },
+    "Gilding Vigor": {
+      "ja": "幸運の雫",
+      "zh-CN": "幸运甘露",
+      "zh-TW": "幸運之露"
     }
   }
 }
